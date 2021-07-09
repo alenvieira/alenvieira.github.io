@@ -3,7 +3,7 @@ languageCode = "en-us"
 title = "Alen Vieira"
 theme = "hugo-ink"
 paginate = 5
-
+relativeUrls = true
 copyright = "© Alen Vieira"
 
 pygmentsstyle = "vs"
