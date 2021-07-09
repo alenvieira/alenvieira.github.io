@@ -1,9 +1,10 @@
-baseURL = "/"
+baseURL = "https://alenvieira.github.io/"
 languageCode = "en-us"
 title = "Alen Vieira"
 theme = "hugo-ink"
 paginate = 5
 relativeUrls = true
+canonifyurls = true
 copyright = "© Alen Vieira"
 
 pygmentsstyle = "vs"

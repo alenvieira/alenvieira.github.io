@@ -4,7 +4,7 @@
 
 ## Tecnologies
 
-– The site is hosted by [Fleek](https://fleek.co/) and built with [Hugo](https://gohugo.io/), using [Ink Theme](https://github.com/knadh/hugo-ink) adapted.
+– The site is hosted by [Github Pages](https://pages.github.com/) and built with [Hugo](https://gohugo.io/), using [Ink Theme](https://github.com/knadh/hugo-ink) adapted.
 
 To run locally:
 
