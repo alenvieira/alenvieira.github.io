@@ -1,0 +1,61 @@
+baseURL = "/"
+languageCode = "en-us"
+title = "Alen Vieira"
+theme = "hugo-ink"
+paginate = 5
+
+copyright = "© Alen Vieira"
+
+pygmentsstyle = "vs"
+pygmentscodefences = true
+pygmentscodefencesguesssyntax = true
+
+googleAnalytics = "UA-123-45"
+disqusShortname = "alenvieira"
+
+[params]
+	subtitle = "Um desenvolvedor de software, compartinhando experiências"
+
+	# Optional 64x64 avatar image.
+	#avatar = "https://image.freepik.com/free-vector/young-man-head-with-beard-avatar-character_24877-36786.jpg"
+
+	# Content types to disable Disqus on.
+	disableDisqusTypes = ["page"]
+	
+	featherIconsCDN = true
+
+	mode = "dark" # "dark" or "auto"
+	# customCSS = "css/custom.css"  # Custom CSS applied to default styles.
+	# customDarkCSS = "css/custom-dark.css"  # Custom styles applied to dark mode css.
+	# customJS = ["js/custom.js", "js/custom1.js"]  # Custom JS scripts.
+
+# Nav.
+[[menu.main]]
+name = "Home"
+url = "/"
+weight = 1
+
+[[menu.main]]
+name = "Posts"
+url = "/posts"
+weight = 2
+
+[[menu.main]]
+name = "About"
+url = "/about"
+weight = 3
+
+[[params.social]]
+name = "Github"
+icon = "github"
+url = "https://github.com/alenvieira"
+
+[[params.social]]
+name="Twitter"
+icon="twitter"
+url="https://twitter.com/alencv"
+
+[[params.social]]
+name = "RSS"
+icon = "rss"
+url = "/index.xml"
