@@ -1,6 +1,7 @@
 ---
 title: "Primeiro Passo com Hello World"
 date: 2021-07-08T23:23:42-03:00
+description: "Vamos refletir um pouco sobre o primeiro passo com o famoso Hello World?"
 draft: false
 ---
 >Suba o primeiro degrau com fé. Não é necessário que você veja toda a escada. Apenas dê o primeiro passo. Martin Luther King 
