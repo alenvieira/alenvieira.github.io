@@ -1,0 +1,11 @@
+<div class="footer wrapper">
+	<nav class="nav">
+		<div>Exceto onde indicado de outra forma, todos os conteúdos neste site essão licenciados sob licença <a class="subfoot" href="https://creativecommons.org/licenses/by/4.0/" rel="license">Creative Commons Atribuição 4.0 Internacional</a></div>
+        <div> Desenvolvido com <a href="https://gohugo.io">Hugo</a>, adaptando o tema <a href="https://github.com/knadh/hugo-ink">Ink</a></div>
+	</nav>
+</div>
+
+{{ template "_internal/google_analytics_async.html" . }}
+{{- with .Site.Params.Social -}}
+<script>feather.replace()</script>
+{{- end -}}
