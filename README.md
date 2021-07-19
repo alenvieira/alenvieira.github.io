@@ -11,7 +11,7 @@
 To run locally:
 
 ```bash
-git clone --recurse-submodules https://github.com/alenvieira/personal-site.git
-cd personal-site
+git clone --recurse-submodules https://github.com/alenvieira/alenvieira.github.io.git
+cd https://github.com/alenvieira/alenvieira.github.io
 hugo server
 ```
