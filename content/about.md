@@ -3,5 +3,5 @@ title: "Sobre"
 draft: false
 ---
 
-Meu nome é Alen Vieira. Trabalho como desenvolvedor de software. Gosto de projetos open source, tecnologias descentralizadas. Acredito que compartilhar experiências podem ser alavancador de inspiração e deixa uma contribuição ao mundo.
+Meu nome é Alen Vieira. Fui um torcedor do Botafogo de Futebol e Regatas. Gosto de projetos open source, tecnologia. Acredito que compartilhar experiências podem ser alavancador de inspiração e deixa uma contribuição ao mundo.
 

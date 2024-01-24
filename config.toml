@@ -15,7 +15,7 @@ googleAnalytics = "UA-123-45"
 disqusShortname = "alenvieira"
 
 [params]
-	subtitle = "Um desenvolvedor de software, compartinhando experiências"
+	subtitle = "Compartilhando ou documentando questões"
 
 	# Optional 64x64 avatar image.
 	#avatar = "https://image.freepik.com/free-vector/young-man-head-with-beard-avatar-character_24877-36786.jpg"
@@ -54,7 +54,7 @@ url = "https://github.com/alenvieira"
 [[params.social]]
 name="Twitter"
 icon="twitter"
-url="https://twitter.com/alencv"
+url="https://twitter.com/alen_vieira"
 
 [[params.social]]
 name = "RSS"
