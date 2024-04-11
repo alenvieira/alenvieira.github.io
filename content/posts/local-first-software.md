@@ -1,7 +1,7 @@
 ---
 title: "Local-first software"
-date: 2023-01-24T19:20:26-03:00
-description: "Não há nuvem. É apenas o computador de outra pessoa"
+date: 2024-01-24T19:20:26-03:00
+description: "Aplicações pensadas para rodar localmente primeiro?"
 draft: false
 ---
 >Não há nuvem. É apenas o computador de outra pessoa. Autor desconhecido

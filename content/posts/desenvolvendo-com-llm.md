@@ -1,6 +1,6 @@
 ---
 title: "Desenvolvendo Software com assistência de LLM"
-date: 2023-01-30T16:40:49-03:00
+date: 2024-01-30T16:40:49-03:00
 description: "Que tal desenvolvemos software com ajuda de uma IA?"
 draft: false
 ---
