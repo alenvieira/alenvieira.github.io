@@ -8,7 +8,7 @@ draft: true
 
 O A.C.I.D. é uma sopa de letrinhas que oferece diversas garantias para transações em diferentes bancos de dados. Certo, mas que história é essa de explicar isso com testes? Essas propriedades são difundidas na forma teórica, porém nem sempre vemos na prática por meio de código. Gosto de ver como um conceito funciona por meio do código mais especificamente com testes unitários e assim consigo assimilar melhor os conceitos.
 
-Os testes usaram a linguagem de programação Python, PostgreSQL como banco de dados relacional, usamos  a biblioteca Python testcontainers-python para rodar o PostgreSQL em um container e a biblioteca Python Psycopg 3 para conectar-se ao PostgreSQL e executar comandos. Mais informações podem ser encontradas neste repositório.
+Os testes usaram a linguagem de programação [Python](https://www.python.org/), [PostgreSQL](https://www.postgresql.org/) como banco de dados relacional, usamos  a biblioteca Python [testcontainers-python](https://testcontainers-python.readthedocs.io/en/latest/) para rodar o PostgreSQL em um container e a biblioteca Python [Psycopg 3](https://www.psycopg.org/psycopg3/) para conectar-se ao PostgreSQL e executar comandos. Mais informações podem ser encontradas neste [repositório](https://github.com/alenvieira/acidwithtests/).
 
 Um detalhe muito importante ao qual prestar atenção é o uso de contexto de conexão. As conexões criadas usando with no Psycopg 3 apresentam o seguinte comportamento:
 ```python
@@ -79,7 +79,7 @@ def test_atomicity(self):
     self.assertEqual(len(db_data), 1)
     self.assertEqual(db_data[0], ("John Smith", 2500))
 ```
-No teste de atomicidade acima, a primeira parte mostra uma transação adicionando o funcionário John Smith e a segunda parte mostra uma transação adicionando a funcionária Beth Lee, mas imediatamente após ocorre uma exceção. Que poderia ser inúmeras situações como o tipo do dado do salário errado ou uma regra de negócio incorreta. Neste exemplo, simplifiquei retornando uma exceção RuntimeError. A terceira parte verifica quais funcionários estão salvos.
+No teste de atomicidade acima, a primeira parte mostra uma transação adicionando o funcionário John Smith e a segunda parte mostra uma transação adicionando a funcionária Beth Lee, mas imediatamente após ocorre uma exceção. Que poderia ser inúmeras situações como, por exemplo, o tipo do dado do salário errado, ou uma regra de negócio incorreta. Neste exemplo, simplifiquei retornando uma exceção RuntimeError. A terceira parte verifica quais funcionários estão salvos.
 
 Na parte final, fazemos uma primeira asserção que realmente foi salvo apenas um registro no banco, Pode ser confuso. Ué porque só um? Então, vamos por partes, a primeira parte foi salvo o John com sucesso totalizando um registro. Na segunda parte, apesar da operação de salvar a Beth estava certinha, logo depois ocorre uma exceção que faz todas as operações da transação serem revertida. E assim, finalizamos os testes checando se foi o John que realmente foi salvo, concluindo que as transações são realmente indivisíveis e evitando transações que possam introduzir dados inconsistentes. 
 
@@ -117,7 +117,7 @@ Em resumo, só o funcionário Dep Tunner foi inserido porque a segunda foi rever
 
 Temos que nos atentar essa garantia torna nossa tabela menos flexível e evitar restrições demais visto que elas podem afetar nossa performance. Lembre-se todas as regras de integridade são aplicadas a cada operação. Escolha bem suas regras e faça uma medição do impacto dela se necessário.
 
-O I de Isolation(Isolamento) é a propriedade que gerencia a concorrência entre as transações. Cada transação opera independente das outras que estão rodando em paralelo, como se executasse um de cada vez. Há níveis de isolamento entre as transações que podem serrem ativadas.
+O I de Isolation(Isolamento) é a propriedade que gerencia a concorrência entre as transações. Cada transação opera independente das outras que estão rodando em paralelo, como se executasse um de cada vez. Há níveis de isolamento entre as transações que podem ser ativadas.
 ```python
 def test_isolation(self):
     with psycopg.connect(self.connection_uri()) as conn:
@@ -174,14 +174,13 @@ def test_durability(self):
         psycopg.connect(self.connection_uri())
   
     container.start()
-    wait_for_logs(self.postgres, "LOG:  database system is ready to accept connections")
+    self.postgres._connect()
 
     with psycopg.connect(self.connection_uri()) as conn:
         with conn.cursor() as cur:
             cur.execute("SELECT name, salary FROM employee")
             db_data = cur.fetchall()
   
-    self.assertEqual(type(cm.exception), psycopg.OperationalError)
     self.assertEqual(len(db_data), 1)
     self.assertEqual(db_data[0], ("Paul Port", 3000))
 ```
