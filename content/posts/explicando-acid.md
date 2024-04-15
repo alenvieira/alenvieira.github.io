@@ -1,6 +1,6 @@
 ---
 title: "Explicando o A.C.I.D. com testes"
-date: 2024-04-10T16:40:49-03:00
+date: 2024-04-15T08:13:29-03:00
 description: "Quais são as garantias do A.C.I.D.?"
 draft: true
 ---
@@ -8,7 +8,7 @@ draft: true
 
 O A.C.I.D. é uma sopa de letrinhas que oferece diversas garantias para transações em diferentes bancos de dados. Certo, mas que história é essa de explicar isso com testes? Essas propriedades são difundidas na forma teórica, porém nem sempre vemos na prática por meio de código. Gosto de ver como um conceito funciona por meio do código mais especificamente com testes unitários e assim consigo assimilar melhor os conceitos.
 
-Os testes usaram a linguagem de programação [Python](https://www.python.org/), [PostgreSQL](https://www.postgresql.org/) como banco de dados relacional, usamos  a biblioteca Python [testcontainers-python](https://testcontainers-python.readthedocs.io/en/latest/) para rodar o PostgreSQL em um container e a biblioteca Python [Psycopg 3](https://www.psycopg.org/psycopg3/) para conectar-se ao PostgreSQL e executar comandos. Mais informações podem ser encontradas neste [repositório](https://github.com/alenvieira/acidwithtests/).
+Os testes usaram a linguagem de programação [Python](https://www.python.org/), [PostgreSQL](https://www.postgresql.org/) como banco de dados relacional, usamos  a biblioteca Python [testcontainers-python](https://testcontainers-python.readthedocs.io/en/latest/) para rodar o PostgreSQL em um container e a biblioteca Python [Psycopg 3](https://www.psycopg.org/psycopg3/) para conectar-se ao PostgreSQL e executar comandos. Mais informações podem ser encontradas neste [repositório](https://github.com/alenvieira/acidwithtests/) no qual até [rodei os testes](https://github.com/alenvieira/acidwithtests/actions/runs/8672804316/job/23783502175) através do Github Actions e provar que não rodam somente na minha máquina :D.
 
 Um detalhe muito importante ao qual prestar atenção é o uso de contexto de conexão. As conexões criadas usando with no Psycopg 3 apresentam o seguinte comportamento:
 ```python
@@ -111,7 +111,10 @@ def test_consistency(self):
     self.assertEqual(len(db_data), 1)
     self.assertEqual(db_data[0], ("Dep Tunner", 3000))
 ```
-No teste de consistência acima, vemos 3 transações para inserir funcionários. A primeira tem uma operação para inserir o funcionário Dep Tunner, a segunda tem uma operação de inserir a funcionária Mary Castle, porém no campo do salário dessa funcionária passa se uma data invés de um número e na terceira operação tem uma transação de inserir o funcionário Bob Fox e o funcionário Alan Rock que tenta inserir em um campo chamado date uma data.
+No teste de consistência acima, vemos 3 transações para inserir funcionários:
+- A primeira tem uma operação para inserir o funcionário Dep Tunner;
+- Na segunda tem uma operação de inserir a funcionária Mary Castle, porém no campo do salário dessa funcionária passa se uma data invés de um número;
+- Por fim, a terceira operação tem uma transação de inserir o funcionário Bob Fox e o funcionário Alan Rock que tenta inserir em um campo chamado date uma data.
 
 Em resumo, só o funcionário Dep Tunner foi inserido porque a segunda foi revertida porque o tipo de dado do campo salário foi passado incorretamente revertendo a transação, assim como na terceira transação que tenta inserir em um campo que não existe na tabela. Isso garante a consistência dos dados ao não permitir tipo de dados diferente ao mapeado ou campo não existente na base de dados. 
 
@@ -155,7 +158,11 @@ def test_isolation(self):
   
     self.assertEqual(db_data[0], 4400)
 ```
-O teste começa com a inserção da funcionária Jess Tex, e possui dois métodos que rodam em threads diferentes para uma concorrência de transações. O primeiro método seleciona a funcionária Jess, "pensa" por um tempo por 4 segundos e resolve realizar um aumento de 10% em seu salário. Já no segundo método começa "pensando" por 2 segundos o que irá fazer, já seleciona a funcionária Jess e aplica um aumento de 20% em seu salário. Porém, quando fazemos a verificação, a funcionária tem apenas o aumento de 10% em seu salário. O que ocorreu? E o aumento de 20% da segunda transação? Ocorreu que a primeira transação não obteve as alterações da segunda transação e sobrescreveu, causando uma inconsistência no banco de dados. As transações ocorreram de forma isolada e não houve um devido tratamento para a situação.
+O teste começa com a inserção da funcionária Jess Tex, e possui dois métodos que rodam em threads diferentes para uma concorrência de transações:
+- O primeiro método seleciona a funcionária Jess, "pensa" por um tempo por 4 segundos e resolve realizar um aumento de 10% em seu salário. 
+- No segundo método começa "pensando" por 2 segundos o que irá fazer, já seleciona a funcionária Jess e aplica um aumento de 20% em seu salário. 
+
+Porém, quando fazemos a verificação, a funcionária tem apenas o aumento de 10% em seu salário. O que ocorreu? E o aumento de 20% da segunda transação? Ocorreu que a primeira transação não obteve as alterações da segunda transação e sobrescreveu, causando uma inconsistência no banco de dados. As transações ocorreram de forma isolada e não houve um devido tratamento para a situação.
 
 Há diversas maneiras de tratar a situação e diferentes configurações para um melhor controle do isolamento, na qual é melhor tratar em um próximo post sobre isso. Em todo caso, nos casos de acesso e escrita de mesma informações temos que nos atentar ao isolamento e assim obter a melhor situação entre obter ao melhor tratamento com a consistência ou com a concorrência.
 
