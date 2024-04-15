@@ -1,8 +1,8 @@
 ---
 title: "Explicando o A.C.I.D. com testes"
-date: 2024-04-15T08:13:29-03:00
+date: 2024-04-15T12:18:29-03:00
 description: "Quais são as garantias do A.C.I.D.?"
-draft: true
+draft: false
 ---
 >Os dados são preciosos e duram mais que os próprios sistemas. Tim Berners-Lee
 
