@@ -8,35 +8,100 @@ draft: false
 
 Isolamento no A.C.I.D. é a garantia responsável por gerenciar a concorrência entre as transações e verificar como as transações simultâneas podem afetar umas às outras. Como tratei [no artigo passado](/posts/explicando-acid/).
 
-Novamente, vamos ao combo de Python com algumas bibliotecas para utilizar o PostgreSQL em um container assim como foi no [artigo anterior](/posts/explicando-acid/). Fazer vários testes mostrando diversos cenários do isolamento. Detalhes no [repositório](https://github.com/alenvieira/acidwithtests). Só lembrando que o conceito das conexões criadas usando with, se tudo for concluído com sucesso durante a conexão, todas as operações serão confirmadas(commit), caso contrário tudo será revertido(rollback) e em ambos os casos a conexão será encerrada.
+Vamos utilizar Python com algumas bibliotecas para trabalhar com PostgreSQL em um container, como abordado no artigo anterior. Realizaremos diversos testes para demonstrar diferentes cenários de isolamento. Os detalhes podem ser encontrados no repositório.
 
-Ok! Cara, está tudo muito confuso! Pode me dar um exemplo, onde saber essa garantia pode ser importante? Vamos lá, pense num cenário em que seu gerente está pensando em te dar um aumento e, paralelamente, a empresa vai fazer um reajuste salarial global.
+Vale lembrar que, ao utilizar conexões criadas com a estrutura "with", todas as operações serão confirmadas (commit) se concluídas com sucesso durante a conexão; caso contrário, tudo será revertido (rollback). Em ambos os casos, a conexão será encerrada automaticamente.
 
-Se ambas as operações forem executadas ao mesmo tempo, algumas possibilidades no seu salário podem ocorrer. Como no melhor cenário, ter de ganhar os aumentos em uma ordem que lhe beneficie, ou algum dos aumentos serem perdidos porque um sobrepôs o outro, ou ainda um dos aumento retornar um erro. Isso vai depender de como está configurado ou mesmo tratado para uma transação ver outra. Vamos lá, aprender um pouco mais sobre isso, começando pelos níveis de isolamento existentes.
+    "Ok! Cara, está tudo muito confuso! Pode me dar um exemplo? Como podemos identificara importância do isolamento?" 
+
+Certo, vamos lá: imagine que seu gerente está considerando te dar um aumento ao mesmo tempo em que a empresa está realizando um reajuste salarial global. Se ambas as operações forem executadas ao mesmo tempo, diferentes cenários podem afetar seu salário:
+
+- No melhor cenário, você recebe os aumentos na ordem que mais te beneficie.
+- Um dos aumentos pode ser perdido se um sobrepuser o outro.
+- Um dos aumentos pode gerar um erro.
+
+Isso depende de como está configurada a visibilidade de uma transação em relação à outra.
+
+Vamos aprender um pouco mais sobre isso começando pelos níveis de isolamento existentes.
 
 ## Níveis de isolamento
 
 O padrão SQL define quatro níveis de isolamento:
 
-- **Read uncommitted**(Leitura não commitada): nível menos restritivo que permite ler dados de outras transações que ainda não foram commitada ou confirmadas.
-- **Read committed**(Leitura commitada): nível onde a transação pode fazer leituras apenas de dados de transações commitada ou confirmadas.
-- **Repeatable read**(Leitura repetida): nível que garante que os dados lidos durante a transação não serão alterados. 
-- **Serializable**(Serializável): nível de isolamento mais restritivo, onde bloqueia todos os dados que serão lidos ou modificados durante a transação. 
+- **Read uncommitted**(Leitura não commitada): Nível menos restritivo que permite ler dados de outras transações que ainda não foram commitados ou confirmados, podendo levar a dirty reads (leituras sujas), non-repeatable reads (leituras não repetíveis), lost updates (atualizações perdidas), read skew (distorções de leitura), write skew (distorções de escrita) e phantom reads (leituras fantasmas).
+- **Read committed**(Leitura commitada): Nível onde a transação pode ler apenas dados de transações que foram commitadas ou confirmadas, evitando leituras sujas, mas ainda permitindo non-repeatable reads, lost updates, read skew, write skew e phantom reads.
+- **Repeatable read**(Leitura repetida): Nível que garante que os dados lidos durante a transação não serão alterados até que a transação seja concluída, evitando leituras non-repeatable reads, mas permitindo fenômenos de lost updates, read skew, write skew e phantom reads. 
+- **Serializable**(Serializável): Nível de isolamento mais restritivo, que garante que as transações sejam completamente isoladas umas das outras, evitando qualquer interferência e fenômenos como dirty reads, non-repeatable reads, lost updates, read skew, write skew e phantom reads.
+
+
 
 ## Principais Fenômenos
 
 Alguns fenômenos podem ser causados por interferência das transações executadas simultaneamente, dependendo da configuração do nível do isolamento. Abaixo, vemos alguns dos fenômenos em que níveis de isolamento podem ocorrer:
 
-<table><tr style="background:0 0"><td rowspan="2" style="border:1px solid #000;text-align:center;vertical-align:middle"><b>Nível de isolamento</b></td><td colspan="7" style="border:1px solid #000;text-align:center;vertical-align:middle"><b>Fenômenos</b></td></tr><tr style="background:0 0"><td style="border:1px solid #000;text-align:center;vertical-align:middle"><b>Dirty Read</b></td><td style="border:1px solid #000;text-align:center;vertical-align:middle"><b>Nonrepeatable Read</b></td><td style="border:1px solid #000;text-align:center;vertical-align:middle"><b>Lost Update</b></td><td style="border:1px solid #000;text-align:center;vertical-align:middle"><b>Read Skew</b></td><td style="border:1px solid #000;text-align:center;vertical-align:middle"><b>Write Skew</b></td><td style="border:1px solid #000;text-align:center;vertical-align:middle"><b>Phantom Read</b></td></tr><tr style="background:0 0"><td style="border:1px solid #000;text-align:center;vertical-align:middle"><b>Read uncommitted</b></td><td style="border:1px solid #000;text-align:center;vertical-align:middle">Pode ocorrer, não no PostgreSQL</td><td style="border:1px solid #000;text-align:center;vertical-align:middle">Pode ocorrer</td><td style="border:1px solid #000;text-align:center;vertical-align:middle">Pode ocorrer</td><td style="border:1px solid #000;text-align:center;vertical-align:middle">Pode ocorrer</td><td style="border:1px solid #000;text-align:center;vertical-align:middle">Pode ocorrer</td><td style="border:1px solid #000;text-align:center;vertical-align:middle">Pode ocorrer</td></tr><tr style="background:0 0"><td style="border:1px solid #000;text-align:center;vertical-align:middle"><b>Read committed</b></td><td style="border:1px solid #000;text-align:center;vertical-align:middle">Não ocorre</td><td style="border:1px solid #000;text-align:center;vertical-align:middle">Pode ocorrer</td><td style="border:1px solid #000;text-align:center;vertical-align:middle">Pode ocorrer</td><td style="border:1px solid #000;text-align:center;vertical-align:middle">Pode ocorrer</td><td style="border:1px solid #000;text-align:center;vertical-align:middle">Pode ocorrer</td><td style="border:1px solid #000;text-align:center;vertical-align:middle">Pode ocorrer</td></tr><tr style="background:0 0"><td style="border:1px solid #000;text-align:center;vertical-align:middle"><b>Repeatable read</b></td><td style="border:1px solid #000;text-align:center;vertical-align:middle">Não ocorre</td><td style="border:1px solid #000;text-align:center;vertical-align:middle">Não ocorre</td><td style="border:1px solid #000;text-align:center;vertical-align:middle">Não ocorre</td><td style="border:1px solid #000;text-align:center;vertical-align:middle">Não ocorre</td><td style="border:1px solid #000;text-align:center;vertical-align:middle">Não ocorre, mas ocorre no PostgreSQL</td><td style="border:1px solid #000;text-align:center;vertical-align:middle">Pode ocorrer, não no PostgreSQL</td></tr><tr style="background:0 0"><td style="border:1px solid #000;text-align:center;vertical-align:middle"><b>Serializable</b></td><td style="border:1px solid #000;text-align:center;vertical-align:middle">Não ocorre</td><td style="border:1px solid #000;text-align:center;vertical-align:middle">Não ocorre</td><td style="border:1px solid #000;text-align:center;vertical-align:middle">Não ocorre</td><td style="border:1px solid #000;text-align:center;vertical-align:middle">Não ocorre</td><td style="border:1px solid #000;text-align:center;vertical-align:middle">Não ocorre</td><td style="border:1px solid #000;text-align:center;vertical-align:middle">Não ocorre</td></tr></table>
+<table>
+  <thead>
+    <tr>
+      <th rowspan="2" style="border:1px solid #000; text-align:center; vertical-align:middle;">Nível de isolamento</th>
+      <th colspan="6" style="border:1px solid #000; text-align:center; vertical-align:middle;">Fenômenos</th>
+    </tr>
+    <tr>
+      <th style="border:1px solid #000; text-align:center; vertical-align:middle;">Dirty Read</th>
+      <th style="border:1px solid #000; text-align:center; vertical-align:middle;">Nonrepeatable Read</th>
+      <th style="border:1px solid #000; text-align:center; vertical-align:middle;">Lost Update</th>
+      <th style="border:1px solid #000; text-align:center; vertical-align:middle;">Read Skew</th>
+      <th style="border:1px solid #000; text-align:center; vertical-align:middle;">Write Skew</th>
+      <th style="border:1px solid #000; text-align:center; vertical-align:middle;">Phantom Read</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="border:1px solid #000; text-align:center; vertical-align:middle;"><b>Read uncommitted</b></td>
+      <td style="border:1px solid #000; text-align:center; vertical-align:middle;">Pode ocorrer, mas <b>não ocorre</b> no PostgreSQL*</td>
+      <td style="border:1px solid #000; text-align:center; vertical-align:middle;">Pode ocorrer</td>
+      <td style="border:1px solid #000; text-align:center; vertical-align:middle;">Pode ocorrer</td>
+      <td style="border:1px solid #000; text-align:center; vertical-align:middle;">Pode ocorrer</td>
+      <td style="border:1px solid #000; text-align:center; vertical-align:middle;">Pode ocorrer</td>
+      <td style="border:1px solid #000; text-align:center; vertical-align:middle;">Pode ocorrer</td>
+    </tr>
+    <tr>
+      <td style="border:1px solid #000; text-align:center; vertical-align:middle;"><b>Read committed</b></td>
+      <td style="border:1px solid #000; text-align:center; vertical-align:middle;">Não ocorre</td>
+      <td style="border:1px solid #000; text-align:center; vertical-align:middle;">Pode ocorrer</td>
+      <td style="border:1px solid #000; text-align:center; vertical-align:middle;">Pode ocorrer</td>
+      <td style="border:1px solid #000; text-align:center; vertical-align:middle;">Pode ocorrer</td>
+      <td style="border:1px solid #000; text-align:center; vertical-align:middle;">Pode ocorrer</td>
+      <td style="border:1px solid #000; text-align:center; vertical-align:middle;">Pode ocorrer</td>
+    </tr>
+    <tr>
+      <td style="border:1px solid #000; text-align:center; vertical-align:middle;"><b>Repeatable read</b></td>
+      <td style="border:1px solid #000; text-align:center; vertical-align:middle;">Não ocorre</td>
+      <td style="border:1px solid #000; text-align:center; vertical-align:middle;">Não ocorre</td>
+      <td style="border:1px solid #000; text-align:center; vertical-align:middle;">Não ocorre</td>
+      <td style="border:1px solid #000; text-align:center; vertical-align:middle;">Não ocorre</td>
+      <td style="border:1px solid #000; text-align:center; vertical-align:middle;">Não ocorre, mas <b>pode ocorrer</b> no PostgreSQL*</td>
+      <td style="border:1px solid #000; text-align:center; vertical-align:middle;">Pode ocorrer, mas <b>não ocorre</b> no PostgreSQL*</td>
+    </tr>
+    <tr>
+      <td style="border:1px solid #000; text-align:center; vertical-align:middle;"><b>Serializable</b></td>
+      <td style="border:1px solid #000; text-align:center; vertical-align:middle;">Não ocorre</td>
+      <td style="border:1px solid #000; text-align:center; vertical-align:middle;">Não ocorre</td>
+      <td style="border:1px solid #000; text-align:center; vertical-align:middle;">Não ocorre</td>
+      <td style="border:1px solid #000; text-align:center; vertical-align:middle;">Não ocorre</td>
+      <td style="border:1px solid #000; text-align:center; vertical-align:middle;">Não ocorre</td>
+      <td style="border:1px solid #000; text-align:center; vertical-align:middle;">Não ocorre</td>
+    </tr>
+  </tbody>
+</table>
 
 
-**Tabela dos principais fenômenos nos diferentes níveis de isolamento.** Fonte: Compilação entre a [Tabela de Níveis de isolamento de transação da Documentação do PostgreSQL](https://www.postgresql.org/docs/16/transaction-iso.html#MVCC-ISOLEVEL-TABLE), do artigo [A Critique of ANSI SQL Isolation Levels](https://arxiv.org/pdf/cs/0701157.pdf) e desse post [A beginner’s guide to Read and Write Skew phenomena](https://vladmihalcea.com/a-beginners-guide-to-read-and-write-skew-phenomena/).
+**Tabela dos principais fenômenos nos diferentes níveis de isolamento.** Fonte: Compilação do autor a partir de [_Tabela de Níveis de isolamento de transação da Documentação do PostgreSQL_](https://www.postgresql.org/docs/16/transaction-iso.html#MVCC-ISOLEVEL-TABLE), do artigo [_A Critique of ANSI SQL Isolation Levels_](https://arxiv.org/pdf/cs/0701157.pdf) e do post [_A beginner’s guide to Read and Write Skew phenomena_](https://vladmihalcea.com/a-beginners-guide-to-read-and-write-skew-phenomena/).
 
-Dependendo do banco de dados utilizado, suas implementações sobre as garantias do isolamento podem ser ligeiramente diferentes. Como vamos utilizar o PostgreSQL, resolvi incorporar as informações específicas dele que difere em três lugares do que deveria acompanhar o padrão SQL. Então, se estiver usando outro banco de dados, pode ser que alguns cenários não ocorram exatamente como no PostgreSQL.
+**\*** Dependendo do banco de dados utilizado, suas implementações sobre as garantias do isolamento podem ser ligeiramente diferentes. Como vamos utilizar o PostgreSQL, resolvi incorporar as informações específicas desse banco de dados que diferem em três pontos com relação ao fenômeno e nível de isolamento que não acompanham o padrão SQL.
 
 ### Dirty Read
 
-Dirty Read ou Leitura Suja, é o fenômeno onde a transação pode ler dados que ainda não foram commitados ou confirmados. No PostgreSQL, onde irei executar os testes, o nível de isolamento **Read Uncommitted** é para inglês ver, não há uma implementação de fato. Está presente apenas por compatibilidade e não é possível reproduzir esse fenômeno no PostgreSQL porque o nível de isolamento real é **Read Committed**. Porém, em outros bancos de dados é possível verificar esse fenômeno.
+Dirty Read ou Leitura Suja é o fenômeno em que a transação pode ler dados que ainda não foram commitados ou confirmados. No PostgreSQL, onde irei executar os testes, o nível de isolamento **Read Uncommitted** não é realmente implementado. Ele está presente apenas por compatibilidade, e não é possível reproduzir esse fenômeno no nesse banco de dados porque o nível de isolamento real é **Read Committed**.
 
 ```python
 def test_without_dirty_read(self):
@@ -82,27 +147,29 @@ def test_without_dirty_read(self):
     self.assertEqual(new_salary, 3500)
 ```
 
-Nesse teste, primeiramente verificamos qual é o nível de isolamento padrão no PostgreSQL e fizemos uma operação para mudar. Após isso, executamos um cenário de dirty read com os seguintes passos entre as transações:
+Nesse teste, primeiramente verificamos qual é o nível de isolamento padrão no PostgreSQL e fizemos uma operação para mudar o nível de isolamento. Após isso, executamos um cenário de dirty read com os seguintes passos entre as transações:
 
-![image](/images/dirty_read.svg)
-- Primeira transação(T1) começa realizando uma operação de alteração de um salário de um funcionário;
-- Na segunda transação(T2), seleciona o salário do funcionário que está sendo alterado e finaliza a transação.
-- Por fim, é confirmado/commitado a transação T1;
+![A imagem mostra um diagrama de sequência com três colunas rotuladas como T1, Database e T2. As interações são as seguintes: Na coluna T1: Uma ação rotulada como "Atualiza salário do funcionário" envia uma seta para a coluna Database. Outra ação rotulada como "Confirma transação" envia uma seta para a coluna Database. Na coluna T2: Uma ação rotulada como "Seleciona funcionário" envia uma seta para a coluna Database.
+O diagrama ilustra uma sequência onde T1 atualiza e confirma a transação do salário de um funcionário no banco de dados, enquanto T2 seleciona um funcionário do banco de dados. Existe uma relação temporal explicitada na imagem na qual T2 inicia-se após T1, mas é finalizada antes de T1.](/static/images/dirty_read.svg)
 
-Em teoria, no nível de isolamento **Read Uncommitted** a segunda transação deveria pegar o valor que a primeira transação que ainda não foi confirmada/commitado e assim ocorrendo o fenômeno dirty read, mas como já dito, isso no PostgreSQL não acontece e podemos confirmar isso nas asserções. Nas asserções podemos verificar as seguintes questões:
+- Primeira transação(T1) começa realizando uma operação de atualização do salário de um funcionário.
+- A segunda transação(T2) seleciona o salário do mesmo funcionário. Ela tem seu inicio e é confirmação antes do término de T1.
+- Por fim, é confirmado/commitado a transação T1 após a finalização de T2.
 
-- O nível de isolamento padrão no PostgreSQL é **Read committed**;
-- Confirmação de mudança no nível de isolamento da transação;
-- A confirmação de que não houve a leitura suja;
-- Que a alteração do salário realmente ocorreu.
+No nível de isolamento **Read Uncommitted**, a segunda transação deveria ler o valor não confirmado/commitado da primeira transação, resultando no fenômeno de dirty read. No entanto, isso não ocorre no PostgreSQL, como podemos confirmar nas asserções. As asserções verificam as seguintes questões:
 
-Por fim, verificamos nos testes que o nível de isolamento padrão é Read committed e que o fenômeno Dirty Read não acontece no PostgreSQL. Sendo uma questão específica de cada banco de dados, é sempre uma boa atenção nesse ponto.  
+- O nível de isolamento padrão no PostgreSQL é **Read Committed**;
+- Verifica-se a mudança no nível de isolamento da transação;
+- Há confirmação de que não houve a leitura suja;
+- E que a alteração do salário realmente ocorreu.
+
+Por fim, verificamos nos testes que o nível de isolamento padrão é **Read Committed** e que o fenômeno Dirty Read não acontece no PostgreSQL. Sendo uma questão específica de cada banco de dados.  
 
 ### Nonrepeatable Read
 
 Nonrepeatable Read ou Leitura Não Repetível, também conhecido por Fuzzy Read, é um fenômeno em que uma transação lê um registro duas vezes e obtém resultados diferentes. Pode ocorrer no PostgreSQL quando está no nível de isolamento **Read Committed**, mas não ocorre no **Repeatable Read**. Na imagem abaixo, mostramos o funcionamento desse fenômeno:
 
-![image](/images/nonrepeatable_read.svg)
+![image](/static/images/nonrepeatable_read.svg)
 - Em T2, seleciona o funcionário;
 - Em T1, atualiza o salário do funcionário;
 - Por fim, seleciona o funcionário novamente.
