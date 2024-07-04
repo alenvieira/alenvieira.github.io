@@ -60,3 +60,6 @@ url="https://twitter.com/alen_vieira"
 name = "RSS"
 icon = "rss"
 url = "/index.xml"
+
+[markup.goldmark.renderer]
+  unsafe = true # Allow HTML in md files

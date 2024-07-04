@@ -39,7 +39,61 @@ O padrão SQL define quatro níveis de isolamento:
 
 Alguns fenômenos podem ser causados por interferência das transações executadas simultaneamente, dependendo da configuração do nível do isolamento. Abaixo, vemos alguns dos fenômenos em que níveis de isolamento podem ocorrer:
 
-<table><thead><tr><th rowspan="2" style="border:1px solid #000; text-align:center; vertical-align:middle;">Nível de isolamento</th><th colspan="6" style="border:1px solid #000; text-align:center; vertical-align:middle;">Fenômenos</th></tr><tr><th style="border:1px solid #000; text-align:center; vertical-align:middle;">Dirty Read</th><th style="border:1px solid #000; text-align:center; vertical-align:middle;">Nonrepeatable Read</th><th style="border:1px solid #000; text-align:center; vertical-align:middle;">Lost Update</th><th style="border:1px solid #000; text-align:center; vertical-align:middle;">Read Skew</th><th style="border:1px solid #000; text-align:center; vertical-align:middle;">Write Skew</th><th style="border:1px solid #000; text-align:center; vertical-align:middle;">Phantom Read</th></tr></thead><tbody><tr><td style="border:1px solid #000; text-align:center; vertical-align:middle;"><b>Read uncommitted</b></td><td style="border:1px solid #000; text-align:center; vertical-align:middle;">Pode ocorrer, mas <b>não ocorre</b> no PostgreSQL*</td><td style="border:1px solid #000; text-align:center; vertical-align:middle;">Pode ocorrer</td><td style="border:1px solid #000; text-align:center; vertical-align:middle;">Pode ocorrer</td><td style="border:1px solid #000; text-align:center; vertical-align:middle;">Pode ocorrer</td><td style="border:1px solid #000; text-align:center; vertical-align:middle;">Pode ocorrer</td><td style="border:1px solid #000; text-align:center; vertical-align:middle;">Pode ocorrer</td></tr><tr><td style="border:1px solid #000; text-align:center; vertical-align:middle;"><b>Read committed</b></td><td style="border:1px solid #000; text-align:center; vertical-align:middle;">Não ocorre</td><td style="border:1px solid #000; text-align:center; vertical-align:middle;">Pode ocorrer</td><td style="border:1px solid #000; text-align:center; vertical-align:middle;">Pode ocorrer</td><td style="border:1px solid #000; text-align:center; vertical-align:middle;">Pode ocorrer</td><td style="border:1px solid #000; text-align:center; vertical-align:middle;">Pode ocorrer</td><td style="border:1px solid #000; text-align:center; vertical-align:middle;">Pode ocorrer</td></tr><tr><td style="border:1px solid #000; text-align:center; vertical-align:middle;"><b>Repeatable read</b></td><td style="border:1px solid #000; text-align:center; vertical-align:middle;">Não ocorre</td><td style="border:1px solid #000; text-align:center; vertical-align:middle;">Não ocorre</td><td style="border:1px solid #000; text-align:center; vertical-align:middle;">Não ocorre</td><td style="border:1px solid #000; text-align:center; vertical-align:middle;">Não ocorre</td><td style="border:1px solid #000; text-align:center; vertical-align:middle;">Não ocorre, mas <b>pode ocorrer</b> no PostgreSQL*</td><td style="border:1px solid #000; text-align:center; vertical-align:middle;">Pode ocorrer, mas <b>não ocorre</b> no PostgreSQL*</td></tr><tr><td style="border:1px solid #000; text-align:center; vertical-align:middle;"><b>Serializable</b></td><td style="border:1px solid #000; text-align:center; vertical-align:middle;">Não ocorre</td><td style="border:1px solid #000; text-align:center; vertical-align:middle;">Não ocorre</td><td style="border:1px solid #000; text-align:center; vertical-align:middle;">Não ocorre</td><td style="border:1px solid #000; text-align:center; vertical-align:middle;">Não ocorre</td><td style="border:1px solid #000; text-align:center; vertical-align:middle;">Não ocorre</td><td style="border:1px solid #000; text-align:center; vertical-align:middle;">Não ocorre</td></tr></tbody></table>
+<table>
+    <thead>
+        <tr>
+            <th rowspan="2" style="border:1px solid #000; text-align:center; vertical-align:middle;">Nível de isolamento
+            </th>
+            <th colspan="6" style="border:1px solid #000; text-align:center; vertical-align:middle;">Fenômenos</th>
+        </tr>
+        <tr>
+            <th style="border:1px solid #000; text-align:center; vertical-align:middle;">Dirty Read</th>
+            <th style="border:1px solid #000; text-align:center; vertical-align:middle;">Nonrepeatable Read</th>
+            <th style="border:1px solid #000; text-align:center; vertical-align:middle;">Lost Update</th>
+            <th style="border:1px solid #000; text-align:center; vertical-align:middle;">Read Skew</th>
+            <th style="border:1px solid #000; text-align:center; vertical-align:middle;">Write Skew</th>
+            <th style="border:1px solid #000; text-align:center; vertical-align:middle;">Phantom Read</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td style="border:1px solid #000; text-align:center; vertical-align:middle;"><b>Read uncommitted</b></td>
+            <td style="border:1px solid #000; text-align:center; vertical-align:middle;">Pode ocorrer, mas <b>não ocorre</b> no PostgreSQL*</td>
+            <td style="border:1px solid #000; text-align:center; vertical-align:middle;">Pode ocorrer</td>
+            <td style="border:1px solid #000; text-align:center; vertical-align:middle;">Pode ocorrer</td>
+            <td style="border:1px solid #000; text-align:center; vertical-align:middle;">Pode ocorrer</td>
+            <td style="border:1px solid #000; text-align:center; vertical-align:middle;">Pode ocorrer</td>
+            <td style="border:1px solid #000; text-align:center; vertical-align:middle;">Pode ocorrer</td>
+        </tr>
+        <tr>
+            <td style="border:1px solid #000; text-align:center; vertical-align:middle;"><b>Read committed</b></td>
+            <td style="border:1px solid #000; text-align:center; vertical-align:middle;">Não ocorre</td>
+            <td style="border:1px solid #000; text-align:center; vertical-align:middle;">Pode ocorrer</td>
+            <td style="border:1px solid #000; text-align:center; vertical-align:middle;">Pode ocorrer</td>
+            <td style="border:1px solid #000; text-align:center; vertical-align:middle;">Pode ocorrer</td>
+            <td style="border:1px solid #000; text-align:center; vertical-align:middle;">Pode ocorrer</td>
+            <td style="border:1px solid #000; text-align:center; vertical-align:middle;">Pode ocorrer</td>
+        </tr>
+        <tr>
+            <td style="border:1px solid #000; text-align:center; vertical-align:middle;"><b>Repeatable read</b></td>
+            <td style="border:1px solid #000; text-align:center; vertical-align:middle;">Não ocorre</td>
+            <td style="border:1px solid #000; text-align:center; vertical-align:middle;">Não ocorre</td>
+            <td style="border:1px solid #000; text-align:center; vertical-align:middle;">Não ocorre</td>
+            <td style="border:1px solid #000; text-align:center; vertical-align:middle;">Não ocorre</td>
+            <td style="border:1px solid #000; text-align:center; vertical-align:middle;">Não ocorre, mas <b>pode ocorrer</b> no PostgreSQL*</td>
+            <td style="border:1px solid #000; text-align:center; vertical-align:middle;">Pode ocorrer, mas <b>não ocorre</b> no PostgreSQL*</td>
+        </tr>
+        <tr>
+            <td style="border:1px solid #000; text-align:center; vertical-align:middle;"><b>Serializable</b></td>
+            <td style="border:1px solid #000; text-align:center; vertical-align:middle;">Não ocorre</td>
+            <td style="border:1px solid #000; text-align:center; vertical-align:middle;">Não ocorre</td>
+            <td style="border:1px solid #000; text-align:center; vertical-align:middle;">Não ocorre</td>
+            <td style="border:1px solid #000; text-align:center; vertical-align:middle;">Não ocorre</td>
+            <td style="border:1px solid #000; text-align:center; vertical-align:middle;">Não ocorre</td>
+            <td style="border:1px solid #000; text-align:center; vertical-align:middle;">Não ocorre</td>
+        </tr>
+    </tbody>
+</table>
 
 **Tabela dos principais fenômenos nos diferentes níveis de isolamento.** Fonte: Compilação do autor a partir de [_Tabela de Níveis de isolamento de transação da Documentação do PostgreSQL_](https://www.postgresql.org/docs/16/transaction-iso.html#MVCC-ISOLEVEL-TABLE), do artigo [_A Critique of ANSI SQL Isolation Levels_](https://arxiv.org/pdf/cs/0701157.pdf) e do post [_A beginner’s guide to Read and Write Skew phenomena_](https://vladmihalcea.com/a-beginners-guide-to-read-and-write-skew-phenomena/).
 
