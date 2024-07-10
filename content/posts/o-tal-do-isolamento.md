@@ -176,6 +176,7 @@ Nonrepeatable Read ou Leitura Não Repetível, também conhecido por Fuzzy Read,
 
 Para exercitar a situação, fizemos dois testes. Um teste com o nível de isolamento **Read Committed** para ver o fenômeno e outro com o nível de isolamento **Repeatable Read** onde não ocorre.
 
+### Teste 01
 ```python
 def test_norepeatable_read_with_isolation_level_read_committed(self):
     with psycopg.connect(self.connection_uri()) as conn:
@@ -185,12 +186,6 @@ def test_norepeatable_read_with_isolation_level_read_committed(self):
 
     def transaction1():
         with psycopg.connect(self.connection_uri()) as conn:
-            with conn.cursor() as cur:
-                time.sleep(1)
-                cur.execute("UPDATE employee SET salary=%s WHERE id=%s", (4500, id_employee))                  
-    
-    def transaction2():
-        with psycopg.connect(self.connection_uri()) as conn:
             global norepeatable_read_first_salary, norepeatable_read_second_salary
             with conn.cursor() as cur:
                 cur.execute("SELECT salary FROM employee WHERE id = %s", (id_employee,))
@@ -199,6 +194,12 @@ def test_norepeatable_read_with_isolation_level_read_committed(self):
                 cur.execute("SELECT salary FROM employee WHERE id = %s", (id_employee,))
                 norepeatable_read_second_salary, = cur.fetchone()
 
+    def transaction2():
+        with psycopg.connect(self.connection_uri()) as conn:
+            with conn.cursor() as cur:
+                time.sleep(1)
+                cur.execute("UPDATE employee SET salary=%s WHERE id=%s", (4500, id_employee))                  
+    
     threads = [Thread(target=transaction1), Thread(target=transaction2)]
     for thread in threads:
         thread.start()
@@ -214,8 +215,9 @@ def test_norepeatable_read_with_isolation_level_read_committed(self):
     self.assertEqual(new_salary, 4500)
 ```
 
-Nesse teste acima, vemos o fenômeno da leitura não repetível acontecendo. O valor do salário do funcionário da primeira consulta difere do salário da segunda consulta do mesmo funcionário porque entre as duas consultas houve modificação do salário.
+No teste 01, observamos o fenômeno da leitura não repetível. O valor do salário do funcionário na primeira consulta difere do valor na segunda consulta do mesmo funcionário, pois o salário foi modificado entre as duas consultas.
 
+### Teste 02
 ```python
 def test_without_norepeatable_read_with_isolation_level_repeatable_read(self):
     with psycopg.connect(self.connection_uri()) as conn:
@@ -225,13 +227,6 @@ def test_without_norepeatable_read_with_isolation_level_repeatable_read(self):
 
     def transaction1():
         with psycopg.connect(self.connection_uri()) as conn:
-            with conn.cursor() as cur:
-                cur.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ")
-                time.sleep(1)
-                cur.execute("UPDATE employee SET salary=%s WHERE id=%s", (4000, id_employee))
-    
-    def transaction2():
-        with psycopg.connect(self.connection_uri()) as conn:
             global without_norepeatable_read_first_salary, without_norepeatable_read_second_salary
             with conn.cursor() as cur:
                 cur.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ")
@@ -240,6 +235,13 @@ def test_without_norepeatable_read_with_isolation_level_repeatable_read(self):
                 time.sleep(2)
                 cur.execute("SELECT salary FROM employee WHERE id = %s", (id_employee,))
                 without_norepeatable_read_second_salary, = cur.fetchone()
+    
+    def transaction2():
+        with psycopg.connect(self.connection_uri()) as conn:
+            with conn.cursor() as cur:
+                cur.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ")
+                time.sleep(1)
+                cur.execute("UPDATE employee SET salary=%s WHERE id=%s", (4000, id_employee))
     
     threads = [Thread(target=transaction1), Thread(target=transaction2)]
     for thread in threads:
@@ -257,21 +259,22 @@ def test_without_norepeatable_read_with_isolation_level_repeatable_read(self):
     self.assertEqual(new_salary, 4000)
 ```
 
-Já nesse outro teste, não temos o fenômeno ocorrendo porque o nível de isolamento **Repeatable Read** impede isso e dentro dessa transação as leituras são repetíveis. O banco de dados resolveu ignorar que o valor foi atualizado.
+Já no teste 02, não ocorre o fenômeno porque o nível de isolamento **Repeatable Read** impede isso e contexto dessa transação as leituras são repetíveis. O banco de dados resolveu ignorar que o valor foi atualizado.
 
-Perceba que isso não foi considerado um erro. Dependendo do contexto, ter o dado mais atualizado é fundamental para a regra de negócio. Em outros casos, é melhor a consistência de dados mais fiel possível. Observe onde esse fenômeno pode ser tolerável.
+Perceba que isso não é considerado um erro. Dependendo do contexto, ter dados mais atualizados pode ser fundamental para a regra de negócio. Em outros casos, a consistência dos dados é mais importante. **É essencial identificar em quais situações esse fenômeno pode ser tolerado.**
 
 ### Lost Update
 
-Lost Update ou Atualização Perdida, é um fenômeno quando duas transações tentam atualizar o mesmo registro e um transação acaba perdendo as informações da outra. Ele pode ocorrer no PostgreSQL quando está no nível de isolamento **Read Committed**, mas não ocorre no **Repeatable Read**. Na imagem a seguir vemos um exemplo desse fenômeno:
+Lost Update, ou Atualização Perdida, é um fenômeno que ocorre quando duas transações tentam atualizar o mesmo registro e, devido à sobreescrita do dado por uma transação concomitante, uma delas acaba perdendo as informações. Esse fenômeno pode ocorrer no PostgreSQL quando o nível de isolamento está configurado como Read Committed, mas não ocorre no nível **Repeatable Read**. A imagem a seguir ilustra um exemplo desse fenômeno:
 
-![image](/images/lost_update.svg)
+![image](/static/images/lost_update.svg)
 - Em T1, seleciona o funcionário;
-- Em T2, seleciona o mesmo funcionário e logo depois atualiza o salário do funcionário;
-- Por fim, em T1, atualiza o salário do funcionário.
+- Em T2, seleciona o mesmo funcionário e, em seguida, atualiza o seu salário;
+- Por fim, em T1, atualiza o salário do funcionário, sobrescrevendo o dado.
 
-Novamente criamos dois testes: um teste com o nível de isolamento **Read Committed** para ver o fenômeno e outro com o nível de isolamento **Repeatable Read** onde não ocorre.
+Novamente, realizamos dois testes: um com o nível de isolamento **Read Committed** para observar o fenômeno e outro com o nível de isolamento **Repeatable Read**, onde ele não ocorre.
 
+### Teste 01
 ```python
 def test_lost_update_with_isolation_level_read_committed(self):
     with psycopg.connect(self.connection_uri()) as conn:
@@ -311,8 +314,9 @@ def test_lost_update_with_isolation_level_read_committed(self):
     self.assertEqual(salary, 4400)
 ```
 
-O fenômeno da atualização perdida acontece no teste acima. A primeira transação não obteve as mudanças do salário da segunda transação e sobrescreveu a informação da segunda.
+No teste 01, observamos o fenômeno da atualização perdida. A primeira transação não refletiu as mudanças no salário feitas pela segunda transação, resultando na sobreescrita das informações da segunda transação.
 
+### Teste 02
 ```python
 def test_without_lost_update_with_isolation_level_repeatable_read(self):
     with psycopg.connect(self.connection_uri()) as conn:
@@ -356,23 +360,24 @@ def test_without_lost_update_with_isolation_level_repeatable_read(self):
     self.assertEqual(type(cm_lost_update.exception), psycopg.errors.SerializationFailure)
 ```
 
-Já nesse segundo teste, o banco de dados com o nível de isolamento **Repeatable Read** identifica o problema e retorna um erro de serialização. Assim, impedindo do fenômeno ocorrer.
+No cenário do teste 02, o banco de dados com o nível de isolamento **Repeatable Read** identifica o problema e retorna um erro de serialização, impedindo que o fenômeno de atualização perdida ocorra.
 
-Em vez de causar um problema na integridade dos dados, é preferível obter um erro ou idenficar a situação e tentar novamente a transação com os dados mais consistentes. Deixando a base de dados íntegra. Há outras maneiras de tratar esse fenômeno, a ser discurtido num próximo post.
+Para evitar comprometer a integridade dos dados com a atualização perdida, é preferível obter um erro ou identificar a situação e tentar novamente a transação com dados mais consistentes. Existem outras maneiras de tratar esse fenômeno, que serão discutidas em um próximo post.
 
 ### Read Skew
 
-Read Skew ou Leitura Distorcida é um fenômeno onde as transações executam consultas sobre dados que podem sofrer alterações e retornam dados inconsistentes. Ele pode ocorrer no PostgreSQL quando está no nível de isolamento Read Committed, mas não ocorre no Repeatable Read. 
+Read Skew ou Leitura Distorcida é um fenômeno onde as transações executam consultas sobre dados que podem sofrer alterações e retornam dados inconsistentes. Ele pode ocorrer no PostgreSQL quando está no nível de isolamento **Read Committed**, mas não ocorre no **Repeatable Read**. 
 
-![image](/images/read_skew.svg)
-- T1 quer selecionar o funcionário 1 e 2;
-- No meio da seleção dos dois funcionários, T2 atualiza os salários deles;
-- Por fim, T1 tem um versão distorcida dos dados: a informação do funcionário 1 desatualizada e a informação do funcionário 2 atualizada.
+![image](/static/images/read_skew.svg)
+- T1 deseja selecionar os funcionários 1 e 2.
+- Durante a seleção dos dois funcionários, T2 atualiza os salários deles.
+- Como resultado, T1 obtém uma versão inconsistente dos dados: a informação do funcionário 1 desatualizada e a do funcionário 2 atualizada.
 
-Para simular o fenômeno, temos dois testes: um com o nível de isolamento **Read Committed** que acontece e outro com **Repeatable Read** onde não ocorre.
+Para simular o fenômeno, realizamos dois testes: um com o nível de isolamento Read Committed, onde ele ocorre, e outro com Repeatable Read, onde ele não ocorre.
 
+### Teste 01
 ```python
-def test_read_skew_with_isolation_level_read_committed(self):
+def test_read_skew_with_read_committed_isolation_level(self):
     with psycopg.connect(self.connection_uri()) as conn:
         with conn.cursor() as cur:
             cur.execute("INSERT INTO employee (name, salary) VALUES (%s, %s) RETURNING id", ("Selma Bates", 4000))
@@ -411,15 +416,17 @@ def test_read_skew_with_isolation_level_read_committed(self):
                 new_salary_employee2, = cur.fetchone()
     
     self.assertEqual(read_skew_salary_employee1, 4000)
-    self.assertNotEqual(read_skew_salary_employee2, 4000)
+    self.assertEqual(read_skew_salary_employee2, 5000)
+    
     self.assertEqual(new_salary_employee1, 5000)
     self.assertEqual(new_salary_employee2, 5000)
 ```
 
-Vemos no teste acima que o salário do primeiro funcionário ainda é o mesmo do inicial, mas o do segundo já é atualizado. Sendo demonstrado assim, o fenômeno e confirmando que ambos os salários foram atualizados.
+No teste acima, no primeiro conjunto de validações, observamos que o salário do primeiro funcionário ainda é o valor inicial, enquanto o salário do segundo funcionário já está atualizado. Isso demonstra o fenômeno da leitura distorcida. No entanto, ao verificarmos os valores dos salários após a conclusão das transações, confirmamos que ambos foram atualizados corretamente.
 
+### Teste 02
 ```python
-def test_without_read_skew_with_isolation_level_repeatable_read(self):
+def test_without_read_skew_with_repeatable_read_isolation_level(self):
     with psycopg.connect(self.connection_uri()) as conn:
         with conn.cursor() as cur:
             cur.execute("INSERT INTO employee (name, salary) VALUES (%s, %s) RETURNING id", ("Eric Wilson", 4000))
@@ -464,30 +471,32 @@ def test_without_read_skew_with_isolation_level_repeatable_read(self):
     self.assertEqual(new_salary_employee1, 5000)
     self.assertEqual(new_salary_employee2, 5000)
 ```
-No teste com o nível de isolamento **Repeatable Read**, o banco de dados intervém e mantém ambos os valores antigos e sem atualização. Isso pode ser necessário caso a funcionalidade realmente precise dos dados consistentes.
+No teste com o nível de isolamento Repeatable Read, o banco de dados intervém e mantém ambos os valores antigos, sem atualizações durante a transação de consulta dos funcionários no banco de dados. Isso pode ser necessário quando a funcionalidade exige dados consistentes no instante da consulta.
 
-Esse fenômeno também ocorre quando há consultas em mais de uma tabela. No caso, ao consultar na segunda tabela ocorre alteração no dado da primeira tabela, assim ficando inconsistentes os dados. Por questão de simplicidade resolvemos mostrar apenas usando uma tabela.
+Esse fenômeno também ocorre quando há consultas em mais de uma tabela. Ao consultar outras tabelas, pode ocorrer uma alteração nos dados da tabela onde ocorreu a primeira consulta, resultando em inconsistências. Por simplicidade, mostramos o exemplo usando apenas uma tabela.
 
-Tenha em mente que é difícil manter a sincronia dos dados de forma consistente ao ter vários relacionamentos entre tabelas. Sempre avaliar ao máximo, as possibilidades ao se consultar algo vital ao negócio.
+É importante lembrar que manter a sincronia dos dados de forma consistente é um desafio, especialmente quando há vários relacionamentos entre tabelas. Avalie cuidadosamente as possibilidades de vir a ocorrer o fenômeno da leitura distorcida ao consultar dados vitais para o seu negócio.
 
 ### Write Shew
-
-Write Skew ou Escrita Distorcida, também chamado de Serialization Anomaly ou Anomalia na serialização, é um fenômeno que ocorre quando transações modificam um dado baseado em uma leitura de dados que já não é mais a mesma. Esse é um caso particular do PostgreSQL, no padrão SQL diz que não deveria ocorrer quando está no nível de isolamento **Repeatable Read**, mas ocorre. Somente no nível **Serializable** não ocorre.
+Write Skew, ou Escrita Distorcida, também conhecido como Serialization Anomaly ou Anomalia na Serialização, é um fenômeno que ocorre quando transações modificam um dado baseado em uma leitura de dados que já não é mais a mesma. De acordo com o padrão SQL, isso não ocorre no nível de isolamento **Repeatable Read**, mas ocorre no PostgreSQL. Esse fenômeno é evitado no nível **Serializable**.
 
 ![image](/static/images/write_skew.svg)
-- Em T1, seleciona o total dos salários dos funcionários;
-- Em T2, seleciona o total dos salários dos funcionários e já atualiza o salário do funcionário 1 com base nisso;
-- Por fim, em T1, atualiza o salário do funcionário 2 com base na consulta que realizou que já não é consitente porque houve uma atualização no salário do funcionário 2;
+- Em T1, ocorre a seleção do somatório dos salários dos funcionários.
+- Em T2, também é selecionado o somatório dos salários dos funcionários e, em seguida, o salário do funcionário 2 é atualizado com base nessa informação.
+- Por fim, em T1, o salário do funcionário 1 é atualizado com base no valor do primeiro somatório obtido, gerando o fenômeno de escrita distorcida.
 
-Ambas transações consultam o mesmo dado, mas atualizam os salários de funcionários diferentes. O fenômeno acontece porque durante a atualização do salário do funcionário 1 em T1, o valor da consulta do total dos salários já foi alterado por T2. Nos testes abaixo, vemos um caso do fenômeno acontecendo e no outro o nível de isolamento impedindo de acontecer.   
+Ambas as transações consultam o mesmo dado (somatório de salários) e atualizam os salários de funcionários distintos. O fenômeno acontece porque, durante a atualização do salário do funcionário 1 em T1, o somatório dos salários foi alterado por T2.
 
+No teste 01, replicamos o fenômeno de escrita distorcida, enquanto no teste 02 impedimos sua ocorrência ao aplicarmos o nível de isolamento **Serializable**. 
+
+### Teste 01
 ```python
-def test_write_skew_with_isolation_level_repeatable_read(self):
+def test_write_skew_with_repeatable_read_isolation_level(self):
     with psycopg.connect(self.connection_uri()) as conn:
         with conn.cursor() as cur:
             cur.execute("INSERT INTO employee (name, salary) VALUES (%s, %s) RETURNING id", ("Selma Bates", 5000))
             id_employee1, = cur.fetchone()
-            cur.execute("INSERT INTO employee (name, salary) VALUES (%s, %s) RETURNING id", ("Samuel Bowen", 5000))
+            cur.execute("INSERT INTO employee (name, salary) VALUES (%s, %s) RETURNING id", ("Samuel Bowen", 9000))
             id_employee2, = cur.fetchone()
 
     def transaction1():
@@ -523,19 +532,20 @@ def test_write_skew_with_isolation_level_repeatable_read(self):
                 cur.execute("SELECT salary FROM employee WHERE id = %s", (id_employee2,))
                 new_salary_employee2, = cur.fetchone()
     
-    self.assertEqual(new_salary_employee1, 6000)
-    self.assertEqual(new_salary_employee2, 6000)
+    self.assertEqual(new_salary_employee1, 6400)
+    self.assertEqual(new_salary_employee2, 10400)
 ```
 
-No teste acima, os salários dos funcionários são incrementados com 10% do total dos salários deles. Se fossem executados sequencialmente, o segundo funcionário iria se beneficiar do aumento do salário do primeiro e teria um aumento maior. O fenômeno aconteceu e ambos ficam com o mesmo incremento.
+No teste 01, os salários dos funcionários são incrementados em 10% com base no somatório de salários. Se as transações fossem executadas sequencialmente, o segundo funcionário se beneficiaria do aumento de salário do primeiro, recebendo um aumento maior. No entanto, o fenômeno de escrita distorcida ocorre, resultando em ambos os funcionários recebendo o mesmo incremento. 
  
+### Teste 02
 ```python
 def test_without_write_skew_with_isolation_level_serializable(self):
     with psycopg.connect(self.connection_uri()) as conn:
         with conn.cursor() as cur:
             cur.execute("INSERT INTO employee (name, salary) VALUES (%s, %s) RETURNING id", ("Dean Knox", 5000))
             id_employee1, = cur.fetchone()
-            cur.execute("INSERT INTO employee (name, salary) VALUES (%s, %s) RETURNING id", ("Madison Frey", 5000))
+            cur.execute("INSERT INTO employee (name, salary) VALUES (%s, %s) RETURNING id", ("Madison Frey", 9000))
             id_employee2, = cur.fetchone()
 
     def transaction1():
@@ -574,12 +584,13 @@ def test_without_write_skew_with_isolation_level_serializable(self):
 
     self.assertEqual(type(cm_write_skew.exception), psycopg.errors.SerializationFailure)        
     self.assertEqual(new_salary_employee1, 5000)
-    self.assertEqual(new_salary_employee2, 6000)
+    self.assertEqual(new_salary_employee2, 10400)
 ```
 
-Nesse teste acima, o banco de dados com o nível de isolamento mais agressivo percebe o caso de escrita distorcida e impede um dos funcionários de ter o aumento. Um erro de serialização é lançado ao invés de ser incrementado o salário. O que faz sentido, a regra do incremento é os 10% do total dos salários atualizados. Pode tentar fazer a transação e concluir os aumentos de salários.
 
-Esse fenômeno, assim como a leitura distorcida, também ocorre quando há consultas em mais de uma tabela. Sendo necessário atentar as possíveis possibilidades e ver se são toleráveis nas regras de negócio.
+No teste 2, o banco de dados com o nível de isolamento mais agressivo detecta o caso de escrita distorcida e impede que um dos funcionários receba o aumento. Em vez de incrementar o salário, é lançado um erro de serialização. Isso faz sentido, já que a regra do incremento é aplicar 10% sobre o somatório dos salários atualizados. Se a transação que gerou o erro fosse refeita, o funcionário 1 receberia o aumento corretamente.
+
+Esse fenômeno, assim como a leitura distorcida, também ocorre quando há consultas em mais de uma tabela. É necessário estar atento às possíveis ocorrências e verificar se são toleráveis dentro das regras de negócio.
 
 ### Phanton Read
 
