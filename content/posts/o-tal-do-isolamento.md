@@ -477,7 +477,7 @@ Esse fenômeno também ocorre quando há consultas em mais de uma tabela. Ao con
 
 É importante lembrar que manter a sincronia dos dados de forma consistente é um desafio, especialmente quando há vários relacionamentos entre tabelas. Avalie cuidadosamente as possibilidades de vir a ocorrer o fenômeno da leitura distorcida ao consultar dados vitais para o seu negócio.
 
-### Write Shew
+### Write Skew
 Write Skew, ou Escrita Distorcida, também conhecido como Serialization Anomaly ou Anomalia na Serialização, é um fenômeno que ocorre quando transações modificam um dado baseado em uma leitura de dados que já não é mais a mesma. De acordo com o padrão SQL, isso não ocorre no nível de isolamento **Repeatable Read**, mas ocorre no PostgreSQL. Esse fenômeno é evitado no nível **Serializable**.
 
 ![image](/images/write_skew.svg)
@@ -594,17 +594,18 @@ Esse fenômeno, assim como a leitura distorcida, também ocorre quando há consu
 
 ### Phanton Read
 
-Phantom Read ou Leitura fantasma, ocorre quando uma transação depende de dados que podem ser modificados por outras transações. Segundo o Padrão SQL, no nível Repeatable Read esse fenômeno poderia ocorrer, mas no PostgreSQL não ocorre. Podemos verificar esse fenômeno no nível Read committed. Um exemplo desse fenômeno está demonstrado na figura abaixo:
+Phantom Read, ou Leitura Fantasma, ocorre quando uma transação depende de dados que podem ser modificados por outras transações. De acordo com o padrão SQL, esse fenômeno pode ocorrer no nível **Repeatable Read**, mas no PostgreSQL isso não acontece. No entanto, ele pode ser observado no nível **Read Committed**. A figura abaixo demonstra um exemplo desse fenômeno:
 
 ![image](/images/phantom_read.svg)
-- Em T1, seleciona o total dos salários dos funcionários;
+- Em T1, seleciona o somatório dos salários dos funcionários;
 - Em T2, insere um funcionário;
-- Por fim, em T1, seleciona novamente o total dos salários dos funcionários.
+- Por fim, em T1, seleciona novamente o somatório dos salários dos funcionários, que é diferente do valor selecionado anteriormente.
 
 Dois testes foram criados para verificar esse fenômeno em diferentes nível de isolamento: um teste com o nível de isolamento com **Read Committed** e outro com **Repeatable Read**.
 
+#### Teste 01
 ```python
-def test_phantom_read_with_isolation_level_read_committed(self):
+def test_phantom_read_with_read_committed_isolation_level(self):
     with psycopg.connect(self.connection_uri()) as conn:
         with conn.cursor() as cur:
             cur.execute("INSERT INTO employee (name, salary) VALUES (%s, %s)", ("Alan Rock", 2500))
@@ -641,10 +642,11 @@ def test_phantom_read_with_isolation_level_read_committed(self):
     self.assertEqual(sum_salary, 9000)
 ```
 
-O teste acima acontece o fenômeno da leitura fantasma, pois entre a primeira consulta da soma dos salários e a segunda consulta da soma dos salários ocorre uma inserção de um novo funcionário.
+No teste 01 acontece o fenômeno da leitura fantasma, pois entre a primeira e a segunda consulta do somatório dos salários ocorre a inserção de um novo funcionário.
 
+#### Teste 02
 ```python
-def test_without_phanton_read_with_isolation_level_repeatable_read(self):
+def test_without_phanton_read_with_repeatable_read_isolation_level(self):
     with psycopg.connect(self.connection_uri()) as conn:
         with conn.cursor() as cur:
             cur.execute("INSERT INTO employee (name, salary) VALUES (%s, %s)", ("Rosie Cole", 2500))
@@ -684,28 +686,31 @@ def test_without_phanton_read_with_isolation_level_repeatable_read(self):
     self.assertEqual(sum_salary, 9000)
 ```
 
-O PostgreSQL com o nível de isolamento **Repeatable Read** impede o fenômeno da leitura fantasma ocorrer, como podemos verificar no teste acima. Uma questão importante a se ressaltar é que isso acontece na inserção e deleção de registros na qual trabalhamos.
+No PostgreSQL, o nível de isolamento **Repeatable Read** impede o fenômeno da leitura fantasma, como podemos verificar no teste 02. É importante destacar que isso ocorre quando estamos realizando uma consulta de leitura numa base de dados enquanto outra transação está realizando inserções ou deleções de registros.
 
-Esse caso é bem semelhante ao da leitura não repetível, com a diferença da leitura não repetível, com a diferença que nesse fenômeno trabalha sobre um conjunto de dados e na leitura não repetível trabalha com o mesmo registro. Novamente, devemos avaliar que é aceitável não ter a informação mais atualizada, se isso impacta nas funcionalidades da sua aplicação.
+Esse caso é semelhante ao da leitura não repetível, com a diferença de que a leitura fantasma trabalha com um **conjunto de dados**, enquanto a leitura não repetível trabalha com o **mesmo registro**. Devemos avaliar se é aceitável, em termos de regras de negócio, não possuir a informação mais atualizada e como isso impacta as funcionalidades da sua aplicação.
 
 ## Algumas observações
 
-Não é porque o nível de isolamento **Serializable** impede todos esses fenômenos de ocorrer que você deveria adotar isso como padrão nas suas transações, isso pode ser muito custoso para o banco de dados e afetar o desempenho de seu sistema. Lembre-se de que o isolamento é uma escolha entre uma maior consistência ou uma maior concorrência. Devemos observar diversas questões:
+Dentre os níveis de isolamento analisados, fica claro que o nível **Serializable** é o mais restritivo e impede a ocorrência de fenômenos que podem gerar inconsistências nos dados. No entanto, adotar o nível Serializable como padrão pode ser custoso e afetar o desempenho do banco de dados e do sistema. O isolamento é uma escolha entre **maior consistência** e **maior concorrência**. Devemos considerar:
 
-- Tratamento dos erros ou conflitos, se houver;
-- Algum limite de tempo da aplicação ou de negócio;
-- Retentativa de alguma operação;
-- Observar a documentação sobre o isolamento de seu banco de dados.
+- Tratamento de erros ou conflitos, se houver;
+- Limite de tempo da aplicação ou de negócio;
+- Retentativa de operações;
+- Consulta da documentação sobre o isolamento do banco de dados.
 
-Existem algumas abordagens que evitam ou detectam alguns desses casos. Os protocolos mais comuns são:
-- [Two-phase locking (P2L)](https://en.wikipedia.org/wiki/Two-phase_locking) mais conhecido como bloqueio pessimista, se utilizando de alguma trava ou bloqueio de algum recurso;
-- [Optimistic concurrency control (OOC)](https://en.wikipedia.org/wiki/Optimistic_concurrency_control) mais conhecido como bloqueio otimista, que deixam a operação acontecer até que detecta um conflito e a transação é revertida.
+Existem algumas abordagens para evitar ou detectar esses casos. Os protocolos mais comuns são:
 
-Ambos protocolos tratam diversos desses fenômenos. Um obtém algum tipo de bloqueio do recurso, evitando executar qualquer operação e, já o outro, evita bloqueios de recursos, se concentrando ao final de detectar que houve algum conflito. Vamos tratar disso no próximo post.
+- [Two-phase locking (P2L)](https://en.wikipedia.org/wiki/Two-phase_locking), conhecido como bloqueio pessimista, utiliza travas ou bloqueios de recursos.
+- [Optimistic concurrency control (OOC)](https://en.wikipedia.org/wiki/Optimistic_concurrency_control), conhecido como bloqueio otimista, permite a operação até detectar um conflito, revertendo a transação.
+ 
+O bloqueio pessimista evita qualquer operação ao bloquear o recurso, enquanto o bloqueio otimista evita bloqueios e se concentra em detectar conflitos. Vamos explorar esses protocolos no próximo post.
 
 ## E por hoje é só, pessoal!
 
-Vimos mais sobre as garantias do isolamento, seus níveis e fenômenos que podem ocorrer e é bom estar atento para que sua aplicação/programa não fique com os dados inconsistentes. Assim como no artigo passado, abaixo tem links bem interessantes que possam complementar sua leitura. Agradecimentos especial ao meu amigo Marcelo Renato Gomes que me ajudar a revisar e melhor esse artigo. Até o próximo artigo.
+Hoje aprofundamos o conceito de isolamento no A.C.I.D., seus níveis e os fenômenos que podem ocorrer, focando nossa análise em como garantir que nossa aplicação não tenha dados inconsistentes. Assim como no artigo anterior, abaixo estão alguns links interessantes que complementam esta leitura.
+
+Agradecimento especial ao meu amigo [Marcelo Gomes](https://gomesmr.substack.com/) pela revisão e melhorias deste artigo. Até o próximo artigo!
 
 [Deeply understand Isolation levels and Read phenomena in MySQL & PostgreSQL](https://dev.to/techschoolguru/understand-isolation-levels-read-phenomena-in-mysql-postgres-c2e)  
 [MVCC in PostgreSQL — 1. Isolation : Postgres Professional](https://postgrespro.com/blog/pgsql/5967856)
