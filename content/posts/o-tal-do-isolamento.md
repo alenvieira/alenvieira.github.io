@@ -150,7 +150,7 @@ def test_without_dirty_read(self):
 Nesse teste, primeiramente verificamos qual é o nível de isolamento padrão no PostgreSQL e fizemos uma operação para mudar o nível de isolamento. Após isso, executamos um cenário de dirty read com os seguintes passos entre as transações:
 
 ![A imagem mostra um diagrama de sequência com três colunas rotuladas como T1, Database e T2. As interações são as seguintes: Na coluna T1: Uma ação rotulada como "Atualiza salário do funcionário" envia uma seta para a coluna Database. Outra ação rotulada como "Confirma transação" envia uma seta para a coluna Database. Na coluna T2: Uma ação rotulada como "Seleciona funcionário" envia uma seta para a coluna Database.
-O diagrama ilustra uma sequência onde T1 atualiza e confirma a transação do salário de um funcionário no banco de dados, enquanto T2 seleciona um funcionário do banco de dados. Existe uma relação temporal explicitada na imagem na qual T2 inicia-se após T1, mas é finalizada antes de T1.](images/dirty_read.svg)
+O diagrama ilustra uma sequência onde T1 atualiza e confirma a transação do salário de um funcionário no banco de dados, enquanto T2 seleciona um funcionário do banco de dados. Existe uma relação temporal explicitada na imagem na qual T2 inicia-se após T1, mas é finalizada antes de T1.](/images/dirty_read.svg)
 
 - Primeira transação(T1) começa realizando uma operação de atualização do salário de um funcionário.
 - A segunda transação(T2) seleciona o salário do mesmo funcionário. Ela tem seu inicio e é confirmação antes do término de T1.
@@ -169,7 +169,7 @@ Por fim, verificamos nos testes que o nível de isolamento padrão é **Read Com
 
 Nonrepeatable Read ou Leitura Não Repetível, também conhecido por Fuzzy Read, é um fenômeno em que uma transação lê um registro duas vezes e obtém resultados diferentes. Pode ocorrer no PostgreSQL quando está no nível de isolamento **Read Committed**, mas não ocorre no **Repeatable Read**. Na imagem abaixo, mostramos o funcionamento desse fenômeno:
 
-![image](images/nonrepeatable_read.svg)
+![image](/images/nonrepeatable_read.svg)
 - Em T2, seleciona o funcionário;
 - Em T1, atualiza o salário do funcionário;
 - Por fim, seleciona o funcionário novamente.
@@ -267,7 +267,7 @@ Perceba que isso não é considerado um erro. Dependendo do contexto, ter dados 
 
 Lost Update, ou Atualização Perdida, é um fenômeno que ocorre quando duas transações tentam atualizar o mesmo registro e, devido à sobreescrita do dado por uma transação concomitante, uma delas acaba perdendo as informações. Esse fenômeno pode ocorrer no PostgreSQL quando o nível de isolamento está configurado como Read Committed, mas não ocorre no nível **Repeatable Read**. A imagem a seguir ilustra um exemplo desse fenômeno:
 
-![image](images/lost_update.svg)
+![image](/images/lost_update.svg)
 - Em T1, seleciona o funcionário;
 - Em T2, seleciona o mesmo funcionário e, em seguida, atualiza o seu salário;
 - Por fim, em T1, atualiza o salário do funcionário, sobrescrevendo o dado.
@@ -368,7 +368,7 @@ Para evitar comprometer a integridade dos dados com a atualização perdida, é 
 
 Read Skew ou Leitura Distorcida é um fenômeno onde as transações executam consultas sobre dados que podem sofrer alterações e retornam dados inconsistentes. Ele pode ocorrer no PostgreSQL quando está no nível de isolamento **Read Committed**, mas não ocorre no **Repeatable Read**. 
 
-![image](images/read_skew.svg)
+![image](/images/read_skew.svg)
 - T1 deseja selecionar os funcionários 1 e 2.
 - Durante a seleção dos dois funcionários, T2 atualiza os salários deles.
 - Como resultado, T1 obtém uma versão inconsistente dos dados: a informação do funcionário 1 desatualizada e a do funcionário 2 atualizada.
@@ -480,7 +480,7 @@ Esse fenômeno também ocorre quando há consultas em mais de uma tabela. Ao con
 ### Write Shew
 Write Skew, ou Escrita Distorcida, também conhecido como Serialization Anomaly ou Anomalia na Serialização, é um fenômeno que ocorre quando transações modificam um dado baseado em uma leitura de dados que já não é mais a mesma. De acordo com o padrão SQL, isso não ocorre no nível de isolamento **Repeatable Read**, mas ocorre no PostgreSQL. Esse fenômeno é evitado no nível **Serializable**.
 
-![image](images/write_skew.svg)
+![image](/images/write_skew.svg)
 - Em T1, ocorre a seleção do somatório dos salários dos funcionários.
 - Em T2, também é selecionado o somatório dos salários dos funcionários e, em seguida, o salário do funcionário 2 é atualizado com base nessa informação.
 - Por fim, em T1, o salário do funcionário 1 é atualizado com base no valor do primeiro somatório obtido, gerando o fenômeno de escrita distorcida.
@@ -596,7 +596,7 @@ Esse fenômeno, assim como a leitura distorcida, também ocorre quando há consu
 
 Phantom Read ou Leitura fantasma, ocorre quando uma transação depende de dados que podem ser modificados por outras transações. Segundo o Padrão SQL, no nível Repeatable Read esse fenômeno poderia ocorrer, mas no PostgreSQL não ocorre. Podemos verificar esse fenômeno no nível Read committed. Um exemplo desse fenômeno está demonstrado na figura abaixo:
 
-![image](images/phantom_read.svg)
+![image](/images/phantom_read.svg)
 - Em T1, seleciona o total dos salários dos funcionários;
 - Em T2, insere um funcionário;
 - Por fim, em T1, seleciona novamente o total dos salários dos funcionários.
