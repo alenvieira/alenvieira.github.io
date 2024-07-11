@@ -692,24 +692,20 @@ Esse caso é bem semelhante ao da leitura não repetível, com a diferença da l
 
 Não é porque o nível de isolamento **Serializable** impede todos esses fenômenos de ocorrer que você deveria adotar isso como padrão nas suas transações, isso pode ser muito custoso para o banco de dados e afetar o desempenho de seu sistema. Lembre-se de que o isolamento é uma escolha entre uma maior consistência ou uma maior concorrência. Devemos observar diversas questões:
 
-- Tratamento dos erros ou conflitos se houver;
+- Tratamento dos erros ou conflitos, se houver;
 - Algum limite de tempo da aplicação ou de negócio;
 - Retentativa de alguma operação;
-- Observar a documentação sobre o isolamento de seu banco de dados;
+- Observar a documentação sobre o isolamento de seu banco de dados.
 
 Existem algumas abordagens que evitam ou detectam alguns desses casos. Os protocolos mais comuns são:
-- [Two-phase locking (P2L)](https://en.wikipedia.org/wiki/Two-phase_locking) mais conhecido como bloqueio pessimista se utilizando de alguma trava ou bloqueio de algum recurso;
-- [Optimistic concurrency control (OOC)](https://en.wikipedia.org/wiki/Optimistic_concurrency_control) mais connhecido como bloqueio otimista que deixam a operação acontecer até que que detecta um conflito e transação é revertida.
+- [Two-phase locking (P2L)](https://en.wikipedia.org/wiki/Two-phase_locking) mais conhecido como bloqueio pessimista, se utilizando de alguma trava ou bloqueio de algum recurso;
+- [Optimistic concurrency control (OOC)](https://en.wikipedia.org/wiki/Optimistic_concurrency_control) mais conhecido como bloqueio otimista, que deixam a operação acontecer até que detecta um conflito e a transação é revertida.
 
-Ambos protocolos tratam diversos esses fenômenos.
-
-Eles são eficazes em cenários de conflito intenso, pois evitam perda de tempo abortando e repetindo transações.
-
-Protocolos otimistas são melhores em cenários de leitura intensa, pois evitam a carga de manipulação de bloqueios e resolução de possíveis impasses..
+Ambos protocolos tratam diversos desses fenômenos. Um obtém algum tipo de bloqueio do recurso, evitando executar qualquer operação e, já o outro, evita bloqueios de recursos, se concentrando ao final de detectar que houve algum conflito. Vamos tratar disso no próximo post.
 
 ## E por hoje é só, pessoal!
 
-Vimos mais sobre as garantias do isolamento, seus níveis e fenômenos que podem ocorrer e é bom estar atento para que sua aplicação/programa não fique com os dados inconsistentes. Assim como no artigo passado, abaixo tem links bem interessantes que possam complementar sua leitura. Até o próximo artigo.
+Vimos mais sobre as garantias do isolamento, seus níveis e fenômenos que podem ocorrer e é bom estar atento para que sua aplicação/programa não fique com os dados inconsistentes. Assim como no artigo passado, abaixo tem links bem interessantes que possam complementar sua leitura. Agradecimentos especial ao meu amigo Marcelo Renato Gomes que me ajudar a revisar e melhor esse artigo. Até o próximo artigo.
 
 [Deeply understand Isolation levels and Read phenomena in MySQL & PostgreSQL](https://dev.to/techschoolguru/understand-isolation-levels-read-phenomena-in-mysql-postgres-c2e)  
 [MVCC in PostgreSQL — 1. Isolation : Postgres Professional](https://postgrespro.com/blog/pgsql/5967856)
