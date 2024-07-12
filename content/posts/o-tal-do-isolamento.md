@@ -714,6 +714,6 @@ Hoje aprofundamos o conceito de isolamento no A.C.I.D., seus níveis e os fenôm
 Agradecimento especial ao meu amigo [Marcelo Gomes](https://gomesmr.substack.com/) pela revisão e melhorias deste artigo. Até o próximo artigo!
 
 [Deeply understand Isolation levels and Read phenomena in MySQL & PostgreSQL](https://dev.to/techschoolguru/understand-isolation-levels-read-phenomena-in-mysql-postgres-c2e)  
-[MVCC in PostgreSQL — 1. Isolation : Postgres Professional](https://postgrespro.com/blog/pgsql/5967856)
+[MVCC in PostgreSQL — 1. Isolation : Postgres Professional](https://postgrespro.com/blog/pgsql/5967856)  
 [SQL Phenomena for Developers](https://dzone.com/articles/sql-phenomena-for-developers)  
 [Transaction Isolation Levels With PostgreSQL as an example](https://mkdev.me/posts/transaction-isolation-levels-with-postgresql-as-an-example)
