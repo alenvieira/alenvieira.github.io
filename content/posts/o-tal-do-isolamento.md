@@ -1,6 +1,6 @@
 ---
 title: "O tal do Isolamento no A.C.I.D."
-date: 2024-06-02T09:38:53-03:00
+date: 2024-07-11T09:38:53-03:00
 description: "Vamos aprofundar um pouco sobre o isolamento?"
 draft: false
 ---
@@ -28,12 +28,10 @@ Vamos aprender um pouco mais sobre isso começando pelos níveis de isolamento e
 
 O padrão SQL define quatro níveis de isolamento:
 
-- **Read uncommitted**(Leitura não commitada): Nível menos restritivo que permite ler dados de outras transações que ainda não foram commitados ou confirmados, podendo levar a dirty reads (leituras sujas), non-repeatable reads (leituras não repetíveis), lost updates (atualizações perdidas), read skew (distorções de leitura), write skew (distorções de escrita) e phantom reads (leituras fantasmas).
-- **Read committed**(Leitura commitada): Nível onde a transação pode ler apenas dados de transações que foram commitadas ou confirmadas, evitando leituras sujas, mas ainda permitindo non-repeatable reads, lost updates, read skew, write skew e phantom reads.
-- **Repeatable read**(Leitura repetida): Nível que garante que os dados lidos durante a transação não serão alterados até que a transação seja concluída, evitando leituras non-repeatable reads, mas permitindo fenômenos de lost updates, read skew, write skew e phantom reads. 
-- **Serializable**(Serializável): Nível de isolamento mais restritivo, que garante que as transações sejam completamente isoladas umas das outras, evitando qualquer interferência e fenômenos como dirty reads, non-repeatable reads, lost updates, read skew, write skew e phantom reads.
-
-
+- **Read uncommitted**(Leitura não commitada): Nível menos restritivo que permite ler dados de outras transações que ainda não foram commitados ou confirmados, podendo levar a dirty read(leitura suja), non-repeatable read(leitura não repetível), lost update(atualizações perdida), read skew(leitura distorcida), write skew(escrita distorção) e phantom read(leitura fantasma).
+- **Read committed**(Leitura commitada): Nível onde a transação pode ler apenas dados de transações que foram commitadas ou confirmadas, evitando dirty read, mas ainda permitindo non-repeatable read, lost update, read skew, write skew e phantom read.
+- **Repeatable read**(Leitura repetida): Nível que garante que os dados lidos durante a transação não serão alterados até que a transação seja concluída, evitando leitura non-repeatable read, mas permitindo fenômenos de lost update, read skew, write skew e phantom read. 
+- **Serializable**(Serializável): Nível de isolamento mais restritivo, que garante que as transações sejam completamente isoladas umas das outras, evitando qualquer interferência e fenômenos como dirty read, non-repeatable read, lost update, read skew, write skew e phantom read.
 
 ## Principais Fenômenos
 
@@ -149,8 +147,7 @@ def test_without_dirty_read(self):
 
 Nesse teste, primeiramente verificamos qual é o nível de isolamento padrão no PostgreSQL e fizemos uma operação para mudar o nível de isolamento. Após isso, executamos um cenário de dirty read com os seguintes passos entre as transações:
 
-![A imagem mostra um diagrama de sequência com três colunas rotuladas como T1, Database e T2. As interações são as seguintes: Na coluna T1: Uma ação rotulada como "Atualiza salário do funcionário" envia uma seta para a coluna Database. Outra ação rotulada como "Confirma transação" envia uma seta para a coluna Database. Na coluna T2: Uma ação rotulada como "Seleciona funcionário" envia uma seta para a coluna Database.
-O diagrama ilustra uma sequência onde T1 atualiza e confirma a transação do salário de um funcionário no banco de dados, enquanto T2 seleciona um funcionário do banco de dados. Existe uma relação temporal explicitada na imagem na qual T2 inicia-se após T1, mas é finalizada antes de T1.](/images/dirty_read.svg)
+![image](/images/dirty_read.svg)
 
 - Primeira transação(T1) começa realizando uma operação de atualização do salário de um funcionário.
 - A segunda transação(T2) seleciona o salário do mesmo funcionário. Ela tem seu inicio e é confirmação antes do término de T1.
@@ -176,9 +173,9 @@ Nonrepeatable Read ou Leitura Não Repetível, também conhecido por Fuzzy Read,
 
 Para exercitar a situação, fizemos dois testes. Um teste com o nível de isolamento **Read Committed** para ver o fenômeno e outro com o nível de isolamento **Repeatable Read** onde não ocorre.
 
-#### Teste 01
+#### Teste 01: Leitura não repetível com o nível de isolamento leitura commitada
 ```python
-def test_norepeatable_read_with_isolation_level_read_committed(self):
+def test_norepeatable_read_with_read_committed_isolation_level(self):
     with psycopg.connect(self.connection_uri()) as conn:
         with conn.cursor() as cur:
             cur.execute("INSERT INTO employee (name, salary) VALUES (%s, %s) RETURNING id", ("Beth Lee", 3500))
@@ -217,9 +214,9 @@ def test_norepeatable_read_with_isolation_level_read_committed(self):
 
 No teste 01, observamos o fenômeno da leitura não repetível. O valor do salário do funcionário na primeira consulta difere do valor na segunda consulta do mesmo funcionário, pois o salário foi modificado entre as duas consultas.
 
-#### Teste 02
+#### Teste 02: Evitando leitura não repetível com o nível de isolamento leitura repetível
 ```python
-def test_without_norepeatable_read_with_isolation_level_repeatable_read(self):
+def test_without_norepeatable_read_with_repeatable_read_isolation_level(self):
     with psycopg.connect(self.connection_uri()) as conn:
         with conn.cursor() as cur:
             cur.execute("INSERT INTO employee (name, salary) VALUES (%s, %s) RETURNING id", ("Dep Tunner", 3000))
@@ -274,9 +271,9 @@ Lost Update, ou Atualização Perdida, é um fenômeno que ocorre quando duas tr
 
 Novamente, realizamos dois testes: um com o nível de isolamento **Read Committed** para observar o fenômeno e outro com o nível de isolamento **Repeatable Read**, onde ele não ocorre.
 
-#### Teste 01
+#### Teste 01: Atualização perdida com o nível de isolamento leitura commitada
 ```python
-def test_lost_update_with_isolation_level_read_committed(self):
+def test_lost_update_with_read_committed_isolation_level(self):
     with psycopg.connect(self.connection_uri()) as conn:
         with conn.cursor() as cur:
             cur.execute("INSERT INTO employee (name, salary) VALUES (%s, %s) RETURNING id", ("Mary Castle", 4000))
@@ -316,9 +313,9 @@ def test_lost_update_with_isolation_level_read_committed(self):
 
 No teste 01, observamos o fenômeno da atualização perdida. A primeira transação não refletiu as mudanças no salário feitas pela segunda transação, resultando na sobreescrita das informações da segunda transação.
 
-#### Teste 02
+#### Teste 02: Evitando atualização perdida com o nível de isolamento leitura não repetível
 ```python
-def test_without_lost_update_with_isolation_level_repeatable_read(self):
+def test_without_lost_update_with_repeatable_read_isolation_level(self):
     with psycopg.connect(self.connection_uri()) as conn:
         with conn.cursor() as cur:
             cur.execute("INSERT INTO employee (name, salary) VALUES (%s, %s) RETURNING id", ("Bob Fox", 4000))
@@ -375,14 +372,14 @@ Read Skew ou Leitura Distorcida é um fenômeno onde as transações executam co
 
 Para simular o fenômeno, realizamos dois testes: um com o nível de isolamento Read Committed, onde ele ocorre, e outro com Repeatable Read, onde ele não ocorre.
 
-#### Teste 01
+#### Teste 01: Leitura distorcida com o nível de isolamento leitura commitada 
 ```python
 def test_read_skew_with_read_committed_isolation_level(self):
     with psycopg.connect(self.connection_uri()) as conn:
         with conn.cursor() as cur:
-            cur.execute("INSERT INTO employee (name, salary) VALUES (%s, %s) RETURNING id", ("Selma Bates", 4000))
+            cur.execute("INSERT INTO employee (name, salary) VALUES (%s, %s) RETURNING id", ("Amanda Lang", 4000))
             id_employee1, = cur.fetchone()
-            cur.execute("INSERT INTO employee (name, salary) VALUES (%s, %s) RETURNING id", ("Samuel Bowen", 4000))
+            cur.execute("INSERT INTO employee (name, salary) VALUES (%s, %s) RETURNING id", ("August Morse", 4000))
             id_employee2, = cur.fetchone()
 
     def transaction1():
@@ -424,7 +421,7 @@ def test_read_skew_with_read_committed_isolation_level(self):
 
 No teste acima, no primeiro conjunto de validações, observamos que o salário do primeiro funcionário ainda é o valor inicial, enquanto o salário do segundo funcionário já está atualizado. Isso demonstra o fenômeno da leitura distorcida. No entanto, ao verificarmos os valores dos salários após a conclusão das transações, confirmamos que ambos foram atualizados corretamente.
 
-#### Teste 02
+#### Teste 02: Evitando leitura distorcida com o nível de isolamento leitura repetível
 ```python
 def test_without_read_skew_with_repeatable_read_isolation_level(self):
     with psycopg.connect(self.connection_uri()) as conn:
@@ -489,7 +486,7 @@ Ambas as transações consultam o mesmo dado (somatório de salários) e atualiz
 
 No teste 01, replicamos o fenômeno de escrita distorcida, enquanto no teste 02 impedimos sua ocorrência ao aplicarmos o nível de isolamento **Serializable**. 
 
-#### Teste 01
+#### Teste 01: Escrita distorcida com o nível de isolamento leitura repetível
 ```python
 def test_write_skew_with_repeatable_read_isolation_level(self):
     with psycopg.connect(self.connection_uri()) as conn:
@@ -538,9 +535,9 @@ def test_write_skew_with_repeatable_read_isolation_level(self):
 
 No teste 01, os salários dos funcionários são incrementados em 10% com base no somatório de salários. Se as transações fossem executadas sequencialmente, o segundo funcionário se beneficiaria do aumento de salário do primeiro, recebendo um aumento maior. No entanto, o fenômeno de escrita distorcida ocorre, resultando em ambos os funcionários recebendo o mesmo incremento. 
  
-#### Teste 02
+#### Teste 02: Evitando escrita distorcida com o nível de isolamento serializável
 ```python
-def test_without_write_skew_with_isolation_level_serializable(self):
+def test_without_write_skew_with_serializable_isolation_level(self):
     with psycopg.connect(self.connection_uri()) as conn:
         with conn.cursor() as cur:
             cur.execute("INSERT INTO employee (name, salary) VALUES (%s, %s) RETURNING id", ("Dean Knox", 5000))
@@ -603,7 +600,7 @@ Phantom Read, ou Leitura Fantasma, ocorre quando uma transação depende de dado
 
 Dois testes foram criados para verificar esse fenômeno em diferentes nível de isolamento: um teste com o nível de isolamento com **Read Committed** e outro com **Repeatable Read**.
 
-#### Teste 01
+#### Teste 01: Leitura Fantasma com o nível de isolamento leitura commitada
 ```python
 def test_phantom_read_with_read_committed_isolation_level(self):
     with psycopg.connect(self.connection_uri()) as conn:
@@ -644,7 +641,7 @@ def test_phantom_read_with_read_committed_isolation_level(self):
 
 No teste 01 acontece o fenômeno da leitura fantasma, pois entre a primeira e a segunda consulta do somatório dos salários ocorre a inserção de um novo funcionário.
 
-#### Teste 02
+#### Teste 02: Evitando leitura fantasma com nível de isolamento leitura repetível 
 ```python
 def test_without_phanton_read_with_repeatable_read_isolation_level(self):
     with psycopg.connect(self.connection_uri()) as conn:
@@ -692,19 +689,23 @@ Esse caso é semelhante ao da leitura não repetível, com a diferença de que a
 
 ## Algumas observações
 
-Dentre os níveis de isolamento analisados, fica claro que o nível **Serializable** é o mais restritivo e impede a ocorrência de fenômenos que podem gerar inconsistências nos dados. No entanto, adotar o nível Serializable como padrão pode ser custoso e afetar o desempenho do banco de dados e do sistema. O isolamento é uma escolha entre **maior consistência** e **maior concorrência**. Devemos considerar:
+Dentre os níveis de isolamento analisados, fica claro que o nível **Serializable** é o mais restritivo e impede a ocorrência de fenômenos que podem gerar inconsistências nos dados. No entanto, adotar o nível Serializable como padrão pode ser custoso e afetar o desempenho do banco de dados e do sistema. O isolamento é uma escolha entre **maior consistência** e **maior concorrência**. 
 
-- Tratamento de erros ou conflitos, se houver;
-- Limite de tempo da aplicação ou de negócio;
-- Retentativa de operações;
-- Consulta da documentação sobre o isolamento do banco de dados.
+Existem algumas abordagens para evitar ou detectar diversos desses fenômenos. Os métodos mais comuns são:
 
-Existem algumas abordagens para evitar ou detectar esses casos. Os protocolos mais comuns são:
+- [Lock-based concurrency](https://en.wikipedia.org/wiki/Record_locking) ou Controle de Concorrência com Bloqueio, utiliza travas ou bloqueios de recursos para impedir que transações acessem ou modifiquem dados simultaneamente, principalmente através de bloqueio pessimista. Isso significa que enquanto um recurso está bloqueado, outras transações precisam esperar até que o bloqueio seja liberado.
 
-- [Two-phase locking (P2L)](https://en.wikipedia.org/wiki/Two-phase_locking), conhecido como bloqueio pessimista, utiliza travas ou bloqueios de recursos.
-- [Optimistic concurrency control (OOC)](https://en.wikipedia.org/wiki/Optimistic_concurrency_control), conhecido como bloqueio otimista, permite a operação até detectar um conflito, revertendo a transação.
- 
-O bloqueio pessimista evita qualquer operação ao bloquear o recurso, enquanto o bloqueio otimista evita bloqueios e se concentra em detectar conflitos. Vamos explorar esses protocolos no próximo post.
+- [Non-lock concurrency control](https://en.wikipedia.org/wiki/Non-lock_concurrency_control) ou Controle de Concorrência sem Bloqueio, utiliza métodos que evitam o uso de bloqueios. Geralmente, emprega controle por timestamp ou bloqueios otimistas para manter a consistência do banco de dados. Isso permite que várias transações possam acessar e modificar dados simultaneamente, desde que não ocorram conflitos.
+
+A escolha entre essas abordagens depende de vários fatores que devem ser considerados:
+
+- Tratamento e frequência de erros ou conflitos na base de dados, e a estratégia para lidar com essas situações, como a retentativa de operações.
+- Restrições de tempo da aplicação ou do negócio, e requisitos de desempenho que podem influenciar na escolha do método mais adequado.
+- Nível de consistência dos dados necessário para cada funcionalidade do sistema.
+- Complexidade de implementação e manutenção de cada mecanismo na aplicação.
+- Consulta detalhada da documentação sobre o isolamento do banco de dados para garantir que os requisitos sejam atendidos.
+
+No próximo post, vamos explorar esses métodos com mais detalhes.
 
 ## E por hoje é só, pessoal!
 
