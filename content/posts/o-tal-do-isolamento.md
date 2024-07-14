@@ -8,7 +8,7 @@ draft: false
 
 Isolamento no A.C.I.D. é a garantia responsável por gerenciar a concorrência entre as transações e verificar como as transações simultâneas podem afetar umas às outras. Como tratei [no artigo passado](/posts/explicando-acid/).  
 
-Vamos utilizar Python com algumas bibliotecas para trabalhar com PostgreSQL em um container, como abordado no artigo anterior. Realizaremos diversos testes para demonstrar diferentes cenários de isolamento. Os detalhes podem ser encontrados no repositório.  
+Vamos utilizar Python com algumas bibliotecas para trabalhar com PostgreSQL em um container, como abordado no artigo anterior. Realizaremos diversos testes para demonstrar diferentes cenários de isolamento. Os detalhes podem ser encontrados no [repositório](https://github.com/alenvieira/acidwithtests/).  
 
 Vale lembrar que, ao utilizar conexões criadas com a estrutura "with", todas as operações serão confirmadas (commit) se concluídas com sucesso durante a conexão; caso contrário, tudo será revertido (rollback). Em ambos os casos, a conexão será encerrada automaticamente.  
 
@@ -30,7 +30,7 @@ O padrão SQL define quatro níveis de isolamento:
 
 - **Read uncommitted**(Leitura não commitada): Nível menos restritivo que permite ler dados de outras transações que ainda não foram commitados ou confirmados, podendo levar a dirty read(leitura suja), non-repeatable read(leitura não repetível), lost update(atualizações perdida), read skew(leitura distorcida), write skew(escrita distorção) e phantom read(leitura fantasma).
 - **Read committed**(Leitura commitada): Nível onde a transação pode ler apenas dados de transações que foram commitadas ou confirmadas, evitando dirty read, mas ainda permitindo non-repeatable read, lost update, read skew, write skew e phantom read.
-- **Repeatable read**(Leitura repetida): Nível que garante que os dados lidos durante a transação não serão alterados até que a transação seja concluída, evitando leitura non-repeatable read, mas permitindo fenômenos de lost update, read skew, write skew e phantom read. 
+- **Repeatable read**(Leitura repetida): Nível que garante que os dados lidos durante a transação não serão alterados até que a transação seja concluída, evitando leitura non-repeatable read, lost update, read skew e write skew, mas permitindo o fenômeno phantom read. 
 - **Serializable**(Serializável): Nível de isolamento mais restritivo, que garante que as transações sejam completamente isoladas umas das outras, evitando qualquer interferência e fenômenos como dirty read, non-repeatable read, lost update, read skew, write skew e phantom read.
 
 ## Principais Fenômenos
@@ -262,7 +262,7 @@ Perceba que isso não é considerado um erro. Dependendo do contexto, ter dados 
 
 ### Lost Update
 
-Lost Update, ou Atualização Perdida, é um fenômeno que ocorre quando duas transações tentam atualizar o mesmo registro e, devido à sobreescrita do dado por uma transação concomitante, uma delas acaba perdendo as informações. Esse fenômeno pode ocorrer no PostgreSQL quando o nível de isolamento está configurado como Read Committed, mas não ocorre no nível **Repeatable Read**. A imagem a seguir ilustra um exemplo desse fenômeno:
+Lost Update, ou Atualização Perdida, é um fenômeno que ocorre quando duas transações tentam atualizar o mesmo registro e, devido à sobreescrita do dado por uma transação concomitante, uma delas acaba perdendo as informações. Esse fenômeno pode ocorrer no PostgreSQL quando o nível de isolamento está configurado como **Read Committed**, mas não ocorre no nível **Repeatable Read**. A imagem a seguir ilustra um exemplo desse fenômeno:
 
 ![image](/images/lost_update.svg)
 - Em T1, seleciona o funcionário;
