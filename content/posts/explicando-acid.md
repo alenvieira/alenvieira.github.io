@@ -8,6 +8,8 @@ draft: false
 
 O A.C.I.D. é uma sopa de letrinhas onde cada letra corresponde uma garantia para transações em diferentes bancos de dados. No entanto, essas propriedades são geralmente explicadas de forma teórica e nem sempre são demonstradas na prática com código. Eu prefiro ver como os conceitos funcionam através de testes, pois isso me ajuda a entendê-los melhor.
 
+## Ambiente dos testes
+
 Os testes foram realizados com a linguagem de programação [Python](https://www.python.org/) e o banco de dados relacional [PostgreSQL](https://www.postgresql.org/). Utilizamos a biblioteca Python [testcontainers-python](https://testcontainers-python.readthedocs.io/en/latest/) para rodar o PostgreSQL em um container e a biblioteca Python [Psycopg 3](https://www.psycopg.org/psycopg3/) para conectar-se ao PostgreSQL e executar comandos. Mais detalhes estão disponíveis neste [repositório](https://github.com/alenvieira/acidwithtests/), onde você pode ver que os [testes foram executados](https://github.com/alenvieira/acidwithtests/actions/runs/8672804316/job/23783502175) com sucesso no GitHub Actions, comprovando que funcionam fora da minha máquina. :D
 
 Um detalhe muito importante a observar é o uso do contexto de conexão no Psycopg 3. Quando você cria uma conexão usando o **with**, o comportamento é o seguinte:
@@ -58,6 +60,8 @@ class AcidWithPostgresTestCase(unittest.TestCase):
 ```
 Todos os conceitos apresentados referem-se a transações. Mas o que é uma transação? Uma transação é um processo que envolve uma ou mais operações de leitura e gravação, geralmente associadas a uma regra de negócio. Agora, vamos testar cada uma das propriedades do acrônimo:
 
+## Atomicity
+
 O A de Atomicity(Atomicidade) é a propriedade responsável por gerenciar as transações. As transações são indivisíveis/atômicas, devem confirmar tudo com um commit ou desfazer tudo com um rollback.
 ```python
 def test_atomicity(self):
@@ -86,6 +90,8 @@ Na parte final, a primeira afirmação pode causar confusão, pois só um regist
 Porém, entretanto, todavia, é crucial avaliar quais operações realmente precisam estar agrupadas em uma transação. Por exemplo, uma transferência de valores entre duas contas — de X para Y — deve ser tratada como uma única transação, pois envolve a alteração dos valores de ambas as contas. Neste caso, garantir que ambas as operações (débito e crédito) ocorram juntas é essencial para manter a consistência.
 
 Por outro lado, a inserção de funcionários no sistema pode não ser o melhor exemplo de uma transação indivisível, visto que cada cadastro de funcionário pode ser independente. Portanto, ao projetar suas transações, é importante analisar cuidadosamente seu cenário e determinar quais operações podem ser agrupadas.
+
+## Consistency
 
 O C de Consistency(Consistência) é uma propriedade associada às regras de integridade definidas. Cada transação sempre deixa o estado consistente. Isso significa que todas as regras de integridade são aplicadas como validações de existência da coluna, de tipo de dado da coluna, de chave primária, de chave estrangeira, de unicidade da coluna e outras restrições que o banco de dados suporte.
 ```python
@@ -121,6 +127,8 @@ No teste de consistência acima, vemos 3 transações para inserir funcionários
 Em resumo, apenas o funcionário Dep Tunner foi inserido porque a segunda transação foi revertida devido a um tipo de dado incorreto no campo salário, o que causou o rollback da transação. Da mesma forma, a terceira transação falhou ao tentar inserir dados em um campo que não existe na tabela. Esses mecanismos garantem a consistência dos dados ao impedir a inserção de tipos de dados incompatíveis ou a inserção em campos inexistentes na base de dados.
 
 Devido à garantia de integridade, nossa tabela pode se tornar menos flexível, e restrições excessivas podem afetar a performance. Lembre-se de que todas as regras de integridade são aplicadas a cada operação. Portanto, é crucial escolher as regras com cuidado e, se necessário, medir o impacto delas no desempenho do sistema.
+
+## Isolation
 
 O I de Isolation(Isolamento) é a propriedade que gerencia a concorrência entre as transações. Cada transação opera independente das outras que estão rodando em paralelo, como se executasse um de cada vez. Há níveis de isolamento entre as transações que podem ser ativadas.
 ```python
@@ -168,6 +176,8 @@ No entanto, ao verificar, notamos que o salário da funcionária foi aumentado e
 
 Existem diversas abordagens e configurações para controlar o isolamento de transações, e é melhor explorar esses detalhes em um [próximo post](/posts/o-tal-do-isolamento/). No entanto, é importante notar que, ao acessar e escrever as mesmas informações, devemos prestar atenção ao nível de isolamento para equilibrar a consistência com a concorrência. Isso garantirá que as transações sejam tratadas da melhor maneira possível, considerando tanto a integridade dos dados quanto a eficiência do sistema.
 
+## Durability
+
 O D de Durability(Durabilidade) é a propriedade que gerencia a recuperação do banco de dados em caso de falhas. Em caso de sucesso de uma transação, manter o estado de forma permanente.
 ```python
 def test_durability(self):
@@ -197,7 +207,9 @@ Podemos observar que, na primeira conexão aberta, após o comando para inserir 
 
 Após uma transação ser confirmada por meio de um commit, todas as operações devem ser refletidas no banco de dados. A durabilidade garante que essas alterações sejam armazenadas em uma unidade de persistência não volátil. Assim, mesmo que o banco de dados sofra uma falha, as alterações realizadas durante a transação não serão perdidas.
 
-Abordei todos os conceitos do ACID e deixei um gancho para discutir o isolamento com mais detalhes em outro post. O código apresentado foi criado para fins didáticos; em um ambiente real, você geralmente possui um conjunto de conexões abertas com o banco de dados e solicita conexões conforme necessário para as transações, ao contrário dos testes onde abri e fechei diversas conexões.
+## E por hoje é só, pessoal!
+
+Abordei todos os conceitos do ACID e deixei um gancho para discutir o isolamento com mais detalhes em [outro post](/posts/o-tal-do-isolamento/). O código apresentado foi criado para fins didáticos; em um ambiente real, você geralmente possui um conjunto de conexões abertas com o banco de dados e solicita conexões conforme necessário para as transações, ao contrário dos testes onde abri e fechei diversas conexões.
 
 Espero que tenha aproveitado a jornada! Se quiser explorar novas abordagens para entender o ACID, confira os três links que seguem. Até mais!
 
