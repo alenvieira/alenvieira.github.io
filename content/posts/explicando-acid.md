@@ -6,11 +6,11 @@ draft: false
 ---
 >Os dados são preciosos e duram mais que os próprios sistemas. Tim Berners-Lee
 
-O A.C.I.D. é uma sopa de letrinhas que oferece diversas garantias para transações em diferentes bancos de dados. Certo, mas que história é essa de explicar isso com testes? Essas propriedades são difundidas na forma teórica, porém nem sempre vemos na prática por meio de código. Gosto de ver como um conceito funciona por meio do código, mais especificamente com testes unitários e assim consigo assimilar melhor os conceitos.
+O A.C.I.D. é uma sopa de letrinhas onde cada letra corresponde uma garantia para transações em diferentes bancos de dados. No entanto, essas propriedades são geralmente explicadas de forma teórica e nem sempre são demonstradas na prática com código. Eu prefiro ver como os conceitos funcionam através de testes, pois isso me ajuda a entendê-los melhor.
 
-Os testes usaram a linguagem de programação [Python](https://www.python.org/), [PostgreSQL](https://www.postgresql.org/) como banco de dados relacional, usamos a biblioteca Python [testcontainers-python](https://testcontainers-python.readthedocs.io/en/latest/) para rodar o PostgreSQL em um container e a biblioteca Python [Psycopg 3](https://www.psycopg.org/psycopg3/) para conectar-se ao PostgreSQL e executar comandos. Mais informações podem ser encontradas neste [repositório](https://github.com/alenvieira/acidwithtests/) no qual até [rodei os testes](https://github.com/alenvieira/acidwithtests/actions/runs/8672804316/job/23783502175) através do Github Actions e provar que não rodam somente na minha máquina :D.
+Os testes foram realizados com a linguagem de programação [Python](https://www.python.org/) e o banco de dados relacional [PostgreSQL](https://www.postgresql.org/). Utilizamos a biblioteca Python [testcontainers-python](https://testcontainers-python.readthedocs.io/en/latest/) para rodar o PostgreSQL em um container e a biblioteca Python [Psycopg 3](https://www.psycopg.org/psycopg3/) para conectar-se ao PostgreSQL e executar comandos. Mais detalhes estão disponíveis neste [repositório](https://github.com/alenvieira/acidwithtests/), onde você pode ver que os [testes foram executados](https://github.com/alenvieira/acidwithtests/actions/runs/8672804316/job/23783502175) com sucesso no GitHub Actions, comprovando que funcionam fora da minha máquina. :D
 
-Um detalhe muito importante ao qual prestar atenção é o uso de contexto de conexão. As conexões criadas usando with no Psycopg 3 apresentam o seguinte comportamento:
+Um detalhe muito importante a observar é o uso do contexto de conexão no Psycopg 3. Quando você cria uma conexão usando o **with**, o comportamento é o seguinte:
 ```python
 # Fonte: https://www.psycopg.org/psycopg3/docs/basic/usage.html#connection-context
 conn = psycopg.connect()
@@ -23,14 +23,14 @@ else:
 finally:
     conn.close()
 ```
-Ou seja, se tudo for concluído com sucesso durante a conexão, todas as operações serão confirmadas(commit), caso contrário tudo será revertido(rollback) e em ambos os casos a conexão será encerrada.
+Ou seja, se todas as operações na conexão forem bem-sucedidas, elas serão confirmadas (commit). Caso contrário, todas serão revertidas (rollback). Em ambos os casos, a conexão será encerrada automaticamente.
 
-Para preparar o ambiente dos testes unitários, precisei criar o seguinte:
+Para preparar o ambiente dos testes unitários, implementei o seguinte:
 
-- o método setUpClass que inicia o PostgreSQL e cria uma tabela nele na criação da classe, ou seja, antes de executar os testes;
+- o método setUpClass que inicia o PostgreSQL e cria uma tabela antes da execução dos testes;
 - o método tearDownClass para parar o PostgreSQL após todos os testes;
 - o método connection_uri permite obter facilmente um URI do Postgresql e usá-lo para criar uma conexão;
-- o método tearDown para fazer a limpeza na tabela após cada teste.
+- o método tearDown que realiza a limpeza da tabela após cada teste.
 ```python
 class AcidWithPostgresTestCase(unittest.TestCase):
   
@@ -56,7 +56,7 @@ class AcidWithPostgresTestCase(unittest.TestCase):
             with conn.cursor() as cur:
                 cur.execute("DELETE FROM employee")
 ```
-Todos os conceitos apresentados são sobre transações. Mas o que é uma transação? Transação é um processo que envolve uma ou mais operações de leitura e gravação e está normalmente associada a uma regra de negócio. Ok! Vamos aos testes de cada letrinha do acrônimo:
+Todos os conceitos apresentados referem-se a transações. Mas o que é uma transação? Uma transação é um processo que envolve uma ou mais operações de leitura e gravação, geralmente associadas a uma regra de negócio. Agora, vamos testar cada uma das propriedades do acrônimo:
 
 O A de Atomicity(Atomicidade) é a propriedade responsável por gerenciar as transações. As transações são indivisíveis/atômicas, devem confirmar tudo com um commit ou desfazer tudo com um rollback.
 ```python
@@ -79,11 +79,13 @@ def test_atomicity(self):
     self.assertEqual(len(db_data), 1)
     self.assertEqual(db_data[0], ("John Smith", 2500))
 ```
-No teste de atomicidade acima, a primeira parte mostra uma transação adicionando o funcionário John Smith e a segunda parte mostra uma transação adicionando a funcionária Beth Lee, mas imediatamente após ocorre uma exceção. Que poderia ser inúmeras situações como, por exemplo, o tipo do dado do salário errado, ou uma regra de negócio incorreta. Neste exemplo, simplifiquei retornando uma exceção RuntimeError. A terceira parte verifica quais funcionários estão salvos.
+No teste de atomicidade acima, a primeira parte realiza uma transação para adicionar o funcionário John Smith. A segunda parte tenta adicionar a funcionária Beth Lee, mas uma exceção ocorre imediatamente após, que pode ser causada por diversos problemas, como um tipo de dado incorreto para o salário ou uma regra de negócio inválida. Para simplificar, neste exemplo, a exceção é uma RuntimeError. A terceira parte do teste verifica quais funcionários foram realmente salvos na base de dados.
 
-Na parte final, há uma primeira asserção que realmente foi salvo apenas um registro no banco. Pode ser confuso. Ué porque só um? Então, vamos por partes, a primeira parte foi salvo o John com sucesso totalizando um registro. Na segunda parte, apesar da operação de salvar a Beth estava certinha, logo depois ocorre uma exceção que faz todas as operações da transação serem revertidas. E assim, finaliza os testes checando se foi o John que realmente foi salvo, concluindo que as transações são realmente indivisíveis e evitando transações que possam introduzir dados inconsistentes. 
+Na parte final, a primeira afirmação pode causar confusão, pois só um registro foi salvo no banco. Vamos esclarecer: na primeira etapa, o registro de John foi salvo com sucesso, totalizando um registro. Na segunda etapa, apesar de Beth ter sido salva corretamente, uma exceção fez com que toda a transação fosse revertida. Portanto, apenas o registro de John permaneceu. Os testes confirmaram que as transações são indivisíveis, prevenindo a introdução de dados inconsistentes.
 
-Porém, entretanto, todavia, é preciso tomar cuidado com o que realmente as operações que realmente necessitam estarem juntas numa transação, por exemplo, uma transferência de valores, uma transação de X para Y, vai alterar valores de X e Y então é um caso bem interessante de estarem juntas. Já o caso de inserir funcionários no sistema podem não serem o melhor exemplo, visto que cada cadastro de funcionário pode ser independente. Faça a análise de seu cenário!
+Porém, entretanto, todavia, é crucial avaliar quais operações realmente precisam estar agrupadas em uma transação. Por exemplo, uma transferência de valores entre duas contas — de X para Y — deve ser tratada como uma única transação, pois envolve a alteração dos valores de ambas as contas. Neste caso, garantir que ambas as operações (débito e crédito) ocorram juntas é essencial para manter a consistência.
+
+Por outro lado, a inserção de funcionários no sistema pode não ser o melhor exemplo de uma transação indivisível, visto que cada cadastro de funcionário pode ser independente. Portanto, ao projetar suas transações, é importante analisar cuidadosamente seu cenário e determinar quais operações podem ser agrupadas.
 
 O C de Consistency(Consistência) é uma propriedade associada às regras de integridade definidas. Cada transação sempre deixa o estado consistente. Isso significa que todas as regras de integridade são aplicadas como validações de existência da coluna, de tipo de dado da coluna, de chave primária, de chave estrangeira, de unicidade da coluna e outras restrições que o banco de dados suporte.
 ```python
@@ -116,9 +118,9 @@ No teste de consistência acima, vemos 3 transações para inserir funcionários
 - Na segunda tem uma operação para inserir a funcionária Mary Castle, porém no campo do salário dessa funcionária passa se uma data invés de um número;
 - Por fim, a terceira operação tem uma transação para inserir o funcionário Bob Fox e o funcionário Alan Rock que tenta inserir em um campo chamado date uma data.
 
-Em resumo, só o funcionário Dep Tunner foi inserido porque a segunda foi revertida porque o tipo de dado do campo salário foi passado incorretamente revertendo a transação, assim como na terceira transação que tenta inserir em um campo que não existe na tabela. Isso garante a consistência dos dados ao não permitir tipo de dados diferente ao mapeado ou campo não existente na base de dados. 
+Em resumo, apenas o funcionário Dep Tunner foi inserido porque a segunda transação foi revertida devido a um tipo de dado incorreto no campo salário, o que causou o rollback da transação. Da mesma forma, a terceira transação falhou ao tentar inserir dados em um campo que não existe na tabela. Esses mecanismos garantem a consistência dos dados ao impedir a inserção de tipos de dados incompatíveis ou a inserção em campos inexistentes na base de dados.
 
-Por conta dessa garantia, nossa tabela é menos flexível e restrições demais podem afetar nossa performance. Lembre-se, todas as regras de integridade são aplicadas a cada operação. Escolha bem suas regras e faça uma medição do impacto dela se necessário.
+Devido à garantia de integridade, nossa tabela pode se tornar menos flexível, e restrições excessivas podem afetar a performance. Lembre-se de que todas as regras de integridade são aplicadas a cada operação. Portanto, é crucial escolher as regras com cuidado e, se necessário, medir o impacto delas no desempenho do sistema.
 
 O I de Isolation(Isolamento) é a propriedade que gerencia a concorrência entre as transações. Cada transação opera independente das outras que estão rodando em paralelo, como se executasse um de cada vez. Há níveis de isolamento entre as transações que podem ser ativadas.
 ```python
@@ -162,9 +164,9 @@ O teste começa com a inserção da funcionária Jess Tex, e possui dois método
 - O primeiro método seleciona a funcionária Jess, "pensa" por um tempo por 4 segundos e resolve realizar um aumento de 10% em seu salário. 
 - No segundo método começa "pensando" por 2 segundos o que irá fazer, já seleciona a funcionária Jess e aplica um aumento de 20% em seu salário. 
 
-Porém, quando fazemos a verificação, a funcionária tem apenas o aumento de 10% em seu salário. O que ocorreu? E o aumento de 20% da segunda transação? Ocorreu que a primeira transação não obteve as alterações da segunda transação e sobrescreve, causando uma inconsistência no banco de dados. As transações ocorreram de forma isolada e não houve um devido tratamento para a situação.
+No entanto, ao verificar, notamos que o salário da funcionária foi aumentado em apenas 10%, e não em 20% como esperado. O que aconteceu? A primeira transação não incorporou as alterações da segunda transação e acabou sobrescrevendo-as, resultando em uma inconsistência no banco de dados. Isso ocorreu porque as transações foram executadas de forma isolada, sem um tratamento adequado para garantir que as alterações de uma não interferissem na outra.
 
-Há diversas maneiras de tratar a situação e diferentes configurações para um melhor controle do isolamento, na qual é melhor tratar em um próximo post sobre isso. Em todo caso, nos casos de acesso e escrita de mesma informações temos que nos atentar ao isolamento e assim obter a melhor situação entre obter o melhor tratamento com a consistência ou com a concorrência.
+Existem diversas abordagens e configurações para controlar o isolamento de transações, e é melhor explorar esses detalhes em um [próximo post](/posts/o-tal-do-isolamento/). No entanto, é importante notar que, ao acessar e escrever as mesmas informações, devemos prestar atenção ao nível de isolamento para equilibrar a consistência com a concorrência. Isso garantirá que as transações sejam tratadas da melhor maneira possível, considerando tanto a integridade dos dados quanto a eficiência do sistema.
 
 O D de Durability(Durabilidade) é a propriedade que gerencia a recuperação do banco de dados em caso de falhas. Em caso de sucesso de uma transação, manter o estado de forma permanente.
 ```python
@@ -191,11 +193,13 @@ def test_durability(self):
     self.assertEqual(len(db_data), 1)
     self.assertEqual(db_data[0], ("Paul Port", 3000))
 ```
-Podemos ver que na primeira conexão aberta logo após o comando de inserir um novo funcionário já forcei um commit e então derrubei o container. Para provar que o banco de dados está inacessível, tentar acessar e não conseguir. Então já começa os procedimentos para inicializar o banco de dados novamente para consultar se os dados realmente foram salvos após desligar forçadamente o container. Assim verificamos esta propriedade.
+Podemos observar que, na primeira conexão aberta, após o comando para inserir um novo funcionário, forcei um commit e, em seguida, derrubei o container. Para demonstrar que o banco de dados estava inacessível, tentei acessá-lo e não obtive sucesso. Em seguida, iniciei novamente o banco de dados para verificar se os dados realmente foram salvos após o desligamento forçado do container. Dessa forma, conseguimos validar a propriedade de durabilidade.
 
-Então, após a transação ser confirmada por meio de um commit as operações devem refletir no banco de dados. A durabilidade entra em jogo garantindo que tudo seja armazenado em uma unidade de persistência não volátil e mesmo se o banco de dados falhar nada será perdido. 
+Após uma transação ser confirmada por meio de um commit, todas as operações devem ser refletidas no banco de dados. A durabilidade garante que essas alterações sejam armazenadas em uma unidade de persistência não volátil. Assim, mesmo que o banco de dados sofra uma falha, as alterações realizadas durante a transação não serão perdidas.
 
-Abordei todos os conceitos do ACID e deixei um gancho para discutir o isolamento com mais detalhes em outro post. O código foi criado para fins didáticos. Em circunstâncias normais, você tem um conjunto de conexões com o banco de dados abertas e vai solicitando conexões para as transações, diferentemente dos testes em que abri e fechei diversas conexões. Espero que tenha aproveitado a jornada e se quiser novas abordagens explicando o ACID logo mais tem três links. Até!
+Abordei todos os conceitos do ACID e deixei um gancho para discutir o isolamento com mais detalhes em outro post. O código apresentado foi criado para fins didáticos; em um ambiente real, você geralmente possui um conjunto de conexões abertas com o banco de dados e solicita conexões conforme necessário para as transações, ao contrário dos testes onde abri e fechei diversas conexões.
+
+Espero que tenha aproveitado a jornada! Se quiser explorar novas abordagens para entender o ACID, confira os três links que seguem. Até mais!
 
 Referências:
 
