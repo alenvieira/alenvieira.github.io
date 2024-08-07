@@ -475,7 +475,7 @@ Esse fenômeno também ocorre quando há consultas em mais de uma tabela. Ao con
 É importante lembrar que manter a sincronia dos dados de forma consistente é um desafio, especialmente quando há vários relacionamentos entre tabelas. Avalie cuidadosamente as possibilidades de vir a ocorrer o fenômeno da leitura distorcida ao consultar dados vitais para o seu negócio.
 
 ### Write Skew
-Write Skew, ou Escrita Distorcida, também conhecido como Serialization Anomaly ou Anomalia na Serialização, é um fenômeno que ocorre quando transações modificam um dado baseado em uma leitura de dados que já não é mais a mesma. De acordo com o padrão SQL, isso não ocorre no nível de isolamento **Repeatable Read**, mas ocorre no PostgreSQL. Esse fenômeno é evitado no nível **Serializable**.
+Write Skew, ou Escrita Distorcida, é um fenômeno que ocorre quando transações modificam um dado baseado em uma leitura de dados que já não é mais a mesma. De acordo com o padrão SQL, isso não ocorre no nível de isolamento **Repeatable Read**, mas ocorre no PostgreSQL. Esse fenômeno é evitado no nível **Serializable**.
 
 ![image](/images/write_skew.svg)
 - Em T1, ocorre a seleção do somatório dos salários dos funcionários.
