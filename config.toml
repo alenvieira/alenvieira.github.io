@@ -1,4 +1,4 @@
-baseURL = "https://alenvieira.github.io/"
+baseURL = "https://blog.alenvieira.com/"
 languageCode = "en-us"
 title = "Alen Vieira"
 theme = "hugo-ink"
@@ -54,7 +54,7 @@ url = "https://github.com/alenvieira"
 [[params.social]]
 name="Twitter"
 icon="twitter"
-url="https://twitter.com/alen_vieira"
+url="https://x.com/alen_vieira"
 
 [[params.social]]
 name = "RSS"
