@@ -1,4 +1,4 @@
-baseURL = "https://blog.alenvieira.com/"
+baseURL = "https://alenvieira.github.io/"
 languageCode = "en-us"
 title = "Alen Vieira"
 theme = "hugo-ink"
