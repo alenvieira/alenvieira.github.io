@@ -1,32 +1,57 @@
-name: github pages
+name: deploy hugo site
 
 on:
   push:
     branches:
-      - main  # Set a branch to deploy
-  pull_request:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
 
 jobs:
-  deploy:
-    runs-on: ubuntu-20.04
+  build:
+    runs-on: ubuntu-latest
+    env:
+      HUGO_ENVIRONMENT: production
+      HUGO_CACHEDIR: ${{ runner.temp }}/hugo_cache
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout
+        uses: actions/checkout@v4
         with:
-          submodules: true  # Fetch Hugo themes (true OR recursive)
-          fetch-depth: 0    # Fetch all history for .GitInfo and .Lastmod
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
 
       - name: Setup Hugo
-        uses: peaceiris/actions-hugo@v2
+        uses: peaceiris/actions-hugo@v3
         with:
-          hugo-version: '0.121.2'
-          # extended: true
+          hugo-version: latest
+          extended: true
 
       - name: Build
-        run: mv images static/images/ && hugo --minify
+        run: hugo --gc --minify
 
-      - name: Deploy
-        uses: peaceiris/actions-gh-pages@v3
-        if: github.ref == 'refs/heads/main'
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./public
+          path: ./public
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

@@ -1,0 +1,79 @@
+baseURL: "https://blog.alenvieira.com/"
+languageCode: "pt-br"
+defaultContentLanguage: "pt"
+defaultContentLanguageInSubdir: false
+
+languages:
+  pt:
+    languageCode: "pt-br"
+    languageName: "Português (Brasil)"
+    weight: 1
+title: "Alen Vieira"
+theme: "PaperMod"
+pagination:
+  pagerSize: 4
+relativeURLs: true
+canonifyURLs: true
+copyright: "Exceto onde indicado de outra forma, todos os conteudos neste site estao licenciados sob licenca [Creative Commons Attribution 4.0 International](https://creativecommons.org/licenses/by/4.0/)."
+
+services:
+  googleAnalytics:
+    ID: "G-SJNQ9C53NN"
+
+params:
+  env: "production"
+  description: "Compartilhando aprendizados sobre tecnologia e desenvolvimento de software."
+  comments: true
+
+  defaultTheme: "light"
+  disableThemeToggle: false
+
+  ShowReadingTime: true
+  ShowPostNavLinks: true
+  ShowCodeCopyButtons: true
+  ShowBreadCrumbs: true
+  disableSpecial1stPost: true
+
+  socialIcons:
+    - name: "github"
+      url: "https://github.com/alenvieira"
+    - name: "x"
+      url: "https://x.com/alen_vieira"
+    - name: "rss"
+      url: "/index.xml"
+
+  giscus:
+    repo: "alenvieira/alenvieira.github.io"
+    repoId: "MDEwOlJlcG9zaXRvcnkzODQyOTIzMDE="
+    category: "General"
+    categoryId: "DIC_kwDOFufVzc4C7TtF"
+    mapping: "pathname"
+    strict: "0"
+    reactionsEnabled: "1"
+    emitMetadata: "0"
+    inputPosition: "bottom"
+    theme: "preferred_color_scheme"
+    lang: "pt"
+    loading: "lazy"
+
+menu:
+  main:
+    - name: "Home"
+      url: "/"
+      weight: 1
+    - name: "Posts"
+      url: "/posts"
+      weight: 2
+    - name: "Sobre"
+      url: "/about"
+      weight: 3
+
+markup:
+  goldmark:
+    renderer:
+      unsafe: true
+  highlight:
+    codeFences: true
+    guessSyntax: true
+    noClasses: false
+    style: "vs"

@@ -1,0 +1,133 @@
+/* Better reading UX for wide tables and code blocks */
+
+@media (min-width: 1200px) {
+  body {
+    --main-width: clamp(1020px, 74vw, 1550px);
+    --nav-width: clamp(1080px, 78vw, 1650px);
+  }
+}
+
+/* PaperMod sets html overflow-y: scroll; switch to auto to avoid always-visible vertical scrollbar */
+html {
+  overflow-y: auto;
+}
+
+.post-content table {
+  display: block;
+  width: max-content;
+  min-width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-gutter: stable both-edges;
+  background:
+    linear-gradient(to right, var(--theme) 24px, rgba(0, 0, 0, 0)) 0 0,
+    linear-gradient(to left, var(--theme) 24px, rgba(0, 0, 0, 0)) 100% 0,
+    radial-gradient(farthest-side at 0 50%, rgba(0, 0, 0, 0.18), rgba(0, 0, 0, 0)) 0 0,
+    radial-gradient(farthest-side at 100% 50%, rgba(0, 0, 0, 0.18), rgba(0, 0, 0, 0)) 100% 0;
+  background-repeat: no-repeat;
+  background-size: 24px 100%, 24px 100%, 10px 100%, 10px 100%;
+  background-attachment: local, local, scroll, scroll;
+}
+
+.post-content table th,
+.post-content table td {
+  white-space: normal;
+  word-break: normal;
+  overflow-wrap: anywhere;
+}
+
+.post-content .highlight,
+.post-content pre {
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-gutter: stable both-edges;
+}
+
+.post-content .highlight pre,
+.post-content pre code {
+  word-break: normal;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 1024px) {
+  .post-content .highlight pre,
+  .post-content pre code {
+    white-space: pre-wrap !important;
+    overflow-x: visible;
+  }
+
+  .post-content table th,
+  .post-content table td {
+    padding: 6px 8px;
+    font-size: 0.92rem;
+  }
+}
+
+.post-content table::-webkit-scrollbar,
+.post-content .highlight::-webkit-scrollbar,
+.post-content pre::-webkit-scrollbar {
+  height: 8px;
+  width: 8px;
+}
+
+.post-content table::-webkit-scrollbar-thumb,
+.post-content .highlight::-webkit-scrollbar-thumb,
+.post-content pre::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--secondary) 75%, transparent);
+  border-radius: 999px;
+}
+
+.post-content table::-webkit-scrollbar-track,
+.post-content .highlight::-webkit-scrollbar-track,
+.post-content pre::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.header-nav {
+  align-items: center;
+}
+
+.header-nav .menu-area {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 0;
+  margin: auto var(--gap);
+}
+
+.header-nav .menu-area .menu {
+  margin: 0;
+}
+
+.header-nav .logo-switches {
+  gap: 2px;
+}
+
+.header-nav .logo-switches .logo-social {
+  display: inline-flex;
+  align-items: center;
+  margin-inline-end: 2px;
+}
+
+.header-nav .logo-switches .logo-social .social-icons {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+}
+
+.header-nav .logo-switches .logo-social .social-icons a {
+  padding: 4px 6px;
+  opacity: 0.85;
+}
+
+.header-nav .logo-switches .logo-social .social-icons a:hover {
+  opacity: 1;
+}
+
+.header-nav .logo-switches .logo-social .social-icons a svg {
+  width: 17px;
+  height: 17px;
+}
